@@ -1,0 +1,1 @@
+"""Local shim package for minimal django compatibility used by nepse_client."""

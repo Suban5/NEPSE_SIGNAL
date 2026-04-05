@@ -1,0 +1,1 @@
+"""Utility namespace for the local django compatibility shim."""

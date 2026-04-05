@@ -1,0 +1,1 @@
+"""NEPSE API client package."""

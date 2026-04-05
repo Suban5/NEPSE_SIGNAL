@@ -1,0 +1,520 @@
+{
+  "info": {
+    "_postman_id": "7fd91d89-5a6f-4c44-8dc4-2f0a6bb7a111",
+    "name": "NepseSignal API",
+    "description": "Postman collection for the NepseSignal FastAPI server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Market",
+      "item": [
+        {
+          "name": "Market Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/status",
+              "host": ["{{base_url}}"],
+              "path": ["market", "status"]
+            }
+          }
+        },
+        {
+          "name": "Market Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/summary",
+              "host": ["{{base_url}}"],
+              "path": ["market", "summary"]
+            }
+          }
+        },
+        {
+          "name": "Market Index",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/index",
+              "host": ["{{base_url}}"],
+              "path": ["market", "index"]
+            }
+          }
+        },
+        {
+          "name": "Sub Indices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/sub-indices",
+              "host": ["{{base_url}}"],
+              "path": ["market", "sub-indices"]
+            }
+          }
+        },
+        {
+          "name": "Live Market",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/live",
+              "host": ["{{base_url}}"],
+              "path": ["market", "live"]
+            }
+          }
+        },
+        {
+          "name": "Price Volume",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/price-volume",
+              "host": ["{{base_url}}"],
+              "path": ["market", "price-volume"]
+            }
+          }
+        },
+        {
+          "name": "Supply Demand",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/supply-demand",
+              "host": ["{{base_url}}"],
+              "path": ["market", "supply-demand"]
+            }
+          }
+        },
+        {
+          "name": "Top Gainers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/top-gainers",
+              "host": ["{{base_url}}"],
+              "path": ["market", "top-gainers"]
+            }
+          }
+        },
+        {
+          "name": "Top Losers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/top-losers",
+              "host": ["{{base_url}}"],
+              "path": ["market", "top-losers"]
+            }
+          }
+        },
+        {
+          "name": "Top Trade Scrips",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/top-trade-scrips",
+              "host": ["{{base_url}}"],
+              "path": ["market", "top-trade-scrips"]
+            }
+          }
+        },
+        {
+          "name": "Top Transaction Scrips",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/top-transaction-scrips",
+              "host": ["{{base_url}}"],
+              "path": ["market", "top-transaction-scrips"]
+            }
+          }
+        },
+        {
+          "name": "Top Turnover Scrips",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/market/top-turnover-scrips",
+              "host": ["{{base_url}}"],
+              "path": ["market", "top-turnover-scrips"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "Company List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies",
+              "host": ["{{base_url}}"],
+              "path": ["companies"]
+            }
+          }
+        },
+        {
+          "name": "Securities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/securities",
+              "host": ["{{base_url}}"],
+              "path": ["securities"]
+            }
+          }
+        },
+        {
+          "name": "Company Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies/{{symbol}}",
+              "host": ["{{base_url}}"],
+              "path": ["companies", "{{symbol}}"]
+            }
+          }
+        },
+        {
+          "name": "Company History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies/{{symbol}}/history?start_date={{start_date}}&end_date={{end_date}}",
+              "host": ["{{base_url}}"],
+              "path": ["companies", "{{symbol}}", "history"],
+              "query": [
+                {"key": "start_date", "value": "{{start_date}}"},
+                {"key": "end_date", "value": "{{end_date}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Company Graph",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies/{{symbol}}/graph",
+              "host": ["{{base_url}}"],
+              "path": ["companies", "{{symbol}}", "graph"]
+            }
+          }
+        },
+        {
+          "name": "Financials by Company ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies/{{company_id}}/financials",
+              "host": ["{{base_url}}"],
+              "path": ["companies", "{{company_id}}", "financials"]
+            }
+          }
+        },
+        {
+          "name": "AGM by Company ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies/{{company_id}}/agm",
+              "host": ["{{base_url}}"],
+              "path": ["companies", "{{company_id}}", "agm"]
+            }
+          }
+        },
+        {
+          "name": "Dividend by Company ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies/{{company_id}}/dividend",
+              "host": ["{{base_url}}"],
+              "path": ["companies", "{{company_id}}", "dividend"]
+            }
+          }
+        },
+        {
+          "name": "Market Depth by Company ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies/{{company_id}}/market-depth",
+              "host": ["{{base_url}}"],
+              "path": ["companies", "{{company_id}}", "market-depth"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trading",
+      "item": [
+        {
+          "name": "Floor Sheet",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/trading/floor-sheet?show_progress={{show_progress}}",
+              "host": ["{{base_url}}"],
+              "path": ["trading", "floor-sheet"],
+              "query": [{"key": "show_progress", "value": "{{show_progress}}"}]
+            }
+          }
+        },
+        {
+          "name": "Floor Sheet by Symbol",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/trading/floor-sheet/{{symbol}}?business_date={{business_date}}",
+              "host": ["{{base_url}}"],
+              "path": ["trading", "floor-sheet", "{{symbol}}"],
+              "query": [{"key": "business_date", "value": "{{business_date}}"}]
+            }
+          }
+        },
+        {
+          "name": "Trading Average",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/trading/average?business_date={{business_date}}&n_days={{n_days}}",
+              "host": ["{{base_url}}"],
+              "path": ["trading", "average"],
+              "query": [
+                {"key": "business_date", "value": "{{business_date}}"},
+                {"key": "n_days", "value": "{{n_days}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trading Market Depth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/trading/market-depth/{{symbol}}",
+              "host": ["{{base_url}}"],
+              "path": ["trading", "market-depth", "{{symbol}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "News",
+      "item": [
+        {
+          "name": "Company News",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/news/company?page={{page}}&page_size={{page_size}}&is_strip_tags={{is_strip_tags}}",
+              "host": ["{{base_url}}"],
+              "path": ["news", "company"],
+              "query": [
+                {"key": "page", "value": "{{page}}"},
+                {"key": "page_size", "value": "{{page_size}}"},
+                {"key": "is_strip_tags", "value": "{{is_strip_tags}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "News Alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/news/alerts?page={{page}}&page_size={{page_size}}&is_strip_tags={{is_strip_tags}}",
+              "host": ["{{base_url}}"],
+              "path": ["news", "alerts"],
+              "query": [
+                {"key": "page", "value": "{{page}}"},
+                {"key": "page_size", "value": "{{page_size}}"},
+                {"key": "is_strip_tags", "value": "{{is_strip_tags}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Press Releases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/news/press-releases",
+              "host": ["{{base_url}}"],
+              "path": ["news", "press-releases"]
+            }
+          }
+        },
+        {
+          "name": "Notices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/news/notices?page={{notice_page}}",
+              "host": ["{{base_url}}"],
+              "path": ["news", "notices"],
+              "query": [{"key": "page", "value": "{{notice_page}}"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Other",
+      "item": [
+        {
+          "name": "Holidays",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/other/holidays?year={{year}}",
+              "host": ["{{base_url}}"],
+              "path": ["other", "holidays"],
+              "query": [{"key": "year", "value": "{{year}}"}]
+            }
+          }
+        },
+        {
+          "name": "Debentures/Bonds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/other/debentures-bonds?instrument_type={{instrument_type}}",
+              "host": ["{{base_url}}"],
+              "path": ["other", "debentures-bonds"],
+              "query": [{"key": "instrument_type", "value": "{{instrument_type}}"}]
+            }
+          }
+        },
+        {
+          "name": "Price Volume History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/other/price-volume-history?business_date={{business_date}}",
+              "host": ["{{base_url}}"],
+              "path": ["other", "price-volume-history"],
+              "query": [{"key": "business_date", "value": "{{business_date}}"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mappings",
+      "item": [
+        {
+          "name": "Company ID Map",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mappings/company-id?force_update={{force_update}}",
+              "host": ["{{base_url}}"],
+              "path": ["mappings", "company-id"],
+              "query": [{"key": "force_update", "value": "{{force_update}}"}]
+            }
+          }
+        },
+        {
+          "name": "Security ID Map",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mappings/security-id?force_update={{force_update}}",
+              "host": ["{{base_url}}"],
+              "path": ["mappings", "security-id"],
+              "query": [{"key": "force_update", "value": "{{force_update}}"}]
+            }
+          }
+        },
+        {
+          "name": "Sector Scrips",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mappings/sector-scrips",
+              "host": ["{{base_url}}"],
+              "path": ["mappings", "sector-scrips"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "base_url", "value": "http://localhost:8000"},
+    {"key": "symbol", "value": "NABIL"},
+    {"key": "company_id", "value": "123"},
+    {"key": "business_date", "value": "2024-01-15"},
+    {"key": "start_date", "value": "2024-01-01"},
+    {"key": "end_date", "value": "2024-03-09"},
+    {"key": "year", "value": "2026"},
+    {"key": "page", "value": "1"},
+    {"key": "page_size", "value": "100"},
+    {"key": "notice_page", "value": "0"},
+    {"key": "n_days", "value": "180"},
+    {"key": "show_progress", "value": "false"},
+    {"key": "is_strip_tags", "value": "true"},
+    {"key": "force_update", "value": "false"},
+    {"key": "instrument_type", "value": "debenture"}
+  ]
+}
