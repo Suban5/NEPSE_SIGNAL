@@ -24,6 +24,7 @@ This document tracks major architectural decisions and their implementation stat
 - Added structured workflow observability with execution IDs in scan/backtest/symbol flows
 - Added analytics API execution_id contract for response-level traceability
 - Added typed analytics response models for improved OpenAPI contract clarity
+- Added typed analytics row models for opportunities and signal summary endpoints
 
 ### Earlier Completed
 

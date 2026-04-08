@@ -19,7 +19,8 @@ from typing_extensions import Annotated
 
 from api.models import (
     AnalyticsBluechipRankingResponse,
-    AnalyticsRowsResponse,
+    AnalyticsOpportunitiesResponse,
+    AnalyticsSignalSummaryResponse,
     ApiErrorResponse,
     ApiContractResponse,
     CompanyHistoryQuery,
@@ -428,7 +429,7 @@ def analytics_bluechip_ranking(
     return _wrap_call("analytics_bluechip_ranking", service.analytics_bluechip_ranking, top_n, sector_relative)
 
 
-@app.get("/analytics/opportunities", response_model=AnalyticsRowsResponse, responses=ERROR_RESPONSES)
+@app.get("/analytics/opportunities", response_model=AnalyticsOpportunitiesResponse, responses=ERROR_RESPONSES)
 def analytics_opportunities(
     top_n: int = Query(default=20, ge=1, le=200),
     sector_relative: bool = Query(default=False),
@@ -437,7 +438,7 @@ def analytics_opportunities(
     return _wrap_call("analytics_opportunities", service.analytics_opportunities, top_n, sector_relative)
 
 
-@app.get("/analytics/signal-summary", response_model=AnalyticsRowsResponse, responses=ERROR_RESPONSES)
+@app.get("/analytics/signal-summary", response_model=AnalyticsSignalSummaryResponse, responses=ERROR_RESPONSES)
 def analytics_signal_summary(
     top_n: int = Query(default=20, ge=1, le=200),
     sector_relative: bool = Query(default=False),

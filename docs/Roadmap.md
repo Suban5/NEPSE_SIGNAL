@@ -65,6 +65,7 @@ Stabilization phase focused on reliability and contract consistency:
 - Added structured workflow logging with execution IDs and benchmark correlation
 - Exposed analytics execution IDs in API responses for end-to-end traceability
 - Tightened analytics OpenAPI contracts with typed response models for response metadata
+- Added typed row models for opportunities and signal summary analytics responses
 
 Remaining stabilization tasks:
 - Increase test coverage to at least 80 percent for service and workflow layers

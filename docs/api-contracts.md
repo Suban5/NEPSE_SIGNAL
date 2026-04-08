@@ -83,10 +83,12 @@ Analytics response contract (shared fields):
 
 Typed response models:
 - `/analytics/bluechip-ranking` -> `AnalyticsBluechipRankingResponse`
-- `/analytics/opportunities` -> `AnalyticsRowsResponse`
-- `/analytics/signal-summary` -> `AnalyticsRowsResponse`
+- `/analytics/opportunities` -> `AnalyticsOpportunitiesResponse`
+- `/analytics/signal-summary` -> `AnalyticsSignalSummaryResponse`
 
-Note: `AnalyticsBluechipRankingResponse` currently enforces typed top-level metadata (`top_n`, `sector_relative`, `execution_id`) while keeping `rows` schema flexible (`List[Dict[str, Any]]`) for backward compatibility.
+Notes:
+- `AnalyticsBluechipRankingResponse` enforces typed top-level metadata (`top_n`, `sector_relative`, `execution_id`) while keeping `rows` schema flexible (`List[Dict[str, Any]]`) for backward compatibility.
+- `AnalyticsOpportunitiesResponse` and `AnalyticsSignalSummaryResponse` enforce typed row schemas with `extra=allow` to preserve compatibility with additive fields.
 
 ### Observability
 - GET /metrics -> RequestMetricsResponse

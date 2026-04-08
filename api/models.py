@@ -180,3 +180,45 @@ class AnalyticsBluechipRankingResponse(BaseModel):
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
     rows: List[Dict[str, Any]]
+
+
+class OpportunityRow(BaseModel):
+    """Typed row model for opportunities analytics output."""
+
+    model_config = ConfigDict(extra="allow")
+
+    symbol: str = Field(min_length=1)
+    trade_score: Optional[float] = None
+    signal: Optional[str] = None
+    confidence: Optional[float] = None
+    bluechip_score: Optional[float] = None
+
+
+class SignalSummaryRow(BaseModel):
+    """Typed row model for signal summary analytics output."""
+
+    model_config = ConfigDict(extra="allow")
+
+    symbol: str = Field(min_length=1)
+    signal: Optional[str] = None
+    confidence: Optional[float] = None
+    bluechip_score: Optional[float] = None
+    trade_score: Optional[float] = None
+
+
+class AnalyticsOpportunitiesResponse(BaseModel):
+    """Typed analytics response for opportunities endpoint."""
+
+    top_n: int
+    sector_relative: bool
+    execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    rows: List[OpportunityRow]
+
+
+class AnalyticsSignalSummaryResponse(BaseModel):
+    """Typed analytics response for signal summary endpoint."""
+
+    top_n: int
+    sector_relative: bool
+    execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    rows: List[SignalSummaryRow]
