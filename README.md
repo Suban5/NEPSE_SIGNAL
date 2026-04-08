@@ -63,6 +63,11 @@ python main.py run-api --host 0.0.0.0 --port 8000 --reload
 
 `--force-refresh` bypasses local and in-memory caches and fetches fresh data from the API.
 
+Workflow observability:
+
+- `scan-market`, `backtest-market`, and `analyze` emit a workflow `execution_id` in CLI logs
+- benchmark artifacts include the same `execution_id` for cross-run correlation
+
 Snapshot fallback order:
 
 1. live_market from upstream provider
@@ -92,6 +97,8 @@ Common output files under output directory:
 - portfolio_backtest.json
 - portfolio_signal_set.csv
 - backtest_benchmark.json
+
+Benchmark JSON files (`scan_benchmark.json`, `backtest_benchmark.json`) include `execution_id` for traceability across logs and outputs.
 
 Persistent fetched datasets under data/datasets:
 

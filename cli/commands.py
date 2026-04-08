@@ -237,7 +237,7 @@ def scan_market(args: argparse.Namespace) -> None:
         args: CLI arguments.
     """
     output_dir = Path(args.output)
-    run_market_scan_workflow(
+    context = run_market_scan_workflow(
         MarketScanDependencies(
             coordinator=build_data_fetch_coordinator(),
             scanner=MarketScanner(),
@@ -255,6 +255,7 @@ def scan_market(args: argparse.Namespace) -> None:
 
         force_refresh=bool(getattr(args, "force_refresh", False)),
     )
+    logger.info("Market scan completed | execution_id=%s | output_dir=%s", context.execution_id, context.output_dir)
 
 
 def backtest_market(args: argparse.Namespace) -> None:
@@ -263,7 +264,7 @@ def backtest_market(args: argparse.Namespace) -> None:
     Args:
         args: CLI arguments.
     """
-    run_market_backtest_workflow(
+    context = run_market_backtest_workflow(
         MarketBacktestDependencies(
             coordinator=build_data_fetch_coordinator(),
             scanner=MarketScanner(),
@@ -279,6 +280,9 @@ def backtest_market(args: argparse.Namespace) -> None:
         rebalance=args.rebalance,
         force_refresh=bool(getattr(args, "force_refresh", False)),
     )
+    logger.info("Market backtest completed | execution_id=%s | output_dir=%s", context.execution_id, context.output_dir)
+
+
 def scan_symbol(args: argparse.Namespace) -> None:
     """Execute single-symbol analysis workflow.
 
@@ -311,6 +315,7 @@ def scan_symbol(args: argparse.Namespace) -> None:
         context.backtest.win_rate,
         context.backtest.sharpe_ratio,
     )
+    logger.info("Symbol analysis completed | execution_id=%s", context.execution_id)
 
 
 def health_check(args: argparse.Namespace) -> None:

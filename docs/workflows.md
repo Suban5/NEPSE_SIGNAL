@@ -28,6 +28,11 @@ Outputs:
 - MarketScanContext
 - CSV artifacts and scan_benchmark.json
 
+Observability:
+- `MarketScanContext.execution_id` provides per-run correlation ID
+- `scan_benchmark.json` includes the same `execution_id`
+- structured events are logged with workflow, execution_id, and event fields
+
 ## Market Backtest Workflow
 
 Entry: run_market_backtest_workflow
@@ -44,6 +49,11 @@ Outputs:
 - MarketBacktestContext
 - portfolio_backtest.json, portfolio_signal_set.csv, backtest_benchmark.json
 
+Observability:
+- `MarketBacktestContext.execution_id` provides per-run correlation ID
+- `backtest_benchmark.json` includes the same `execution_id`
+- structured events are logged with workflow, execution_id, and event fields
+
 ## Symbol Analysis Workflow
 
 Entry: run_symbol_analysis_workflow
@@ -56,6 +66,10 @@ Inputs:
 
 Outputs:
 - SymbolAnalysisContext including signal and backtest result
+
+Observability:
+- `SymbolAnalysisContext.execution_id` provides per-run correlation ID
+- structured events are logged with workflow, execution_id, and event fields
 
 ## Shared Utilities
 

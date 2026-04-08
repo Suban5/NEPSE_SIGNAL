@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-06
+Last Reviewed: 2026-04-08
 Source of Truth: cli/commands.py, workflows/*.py
 Validation Method: Code + Tests
 
@@ -24,6 +24,8 @@ python main.py scan-market --top-n 15 --plot --sector-relative --output output -
 
 Outputs include ranking CSVs and scan_benchmark.json.
 
+CLI output now logs workflow completion with an `execution_id`. The same `execution_id` is persisted in `scan_benchmark.json` for trace correlation.
+
 ### analyze
 
 ```bash
@@ -34,6 +36,8 @@ python main.py analyze NABIL --start-date 2024-01-01 --end-date 2026-03-31 --sec
 - --start-date: YYYY-MM-DD
 - --end-date: YYYY-MM-DD
 - --sector-relative: flag
+
+CLI output logs workflow completion with an `execution_id` for symbol analysis traceability.
 
 ### backtest-market
 
@@ -49,6 +53,8 @@ python main.py backtest-market --top-n 20 --lookback-days 252 --rebalance monthl
 - --force-refresh: flag (default false; bypasses memory and disk cache)
 
 Outputs include portfolio_backtest.json, portfolio_signal_set.csv, and backtest_benchmark.json.
+
+CLI output now logs workflow completion with an `execution_id`. The same `execution_id` is persisted in `backtest_benchmark.json` for trace correlation.
 
 ## Data Refresh Behavior
 

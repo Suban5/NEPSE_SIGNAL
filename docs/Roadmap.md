@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-05
+Last Reviewed: 2026-04-08
 Source of Truth: api/app.py, api/service.py, cli/commands.py, workflows/*.py, bluechip/detector.py, docs/*.md
 Validation Method: Code + Tests
 
@@ -62,11 +62,12 @@ Stabilization phase focused on reliability and contract consistency:
 - Added end-to-end parity tests for all data paths
 - Locked in force-refresh and fallback semantics across all callers
 - Deprecated legacy fetcher with backward-compatible alias
+- Added structured workflow logging with execution IDs and benchmark correlation
 
 Remaining stabilization tasks:
 - Increase test coverage to at least 80 percent for service and workflow layers
 - Standardize output contracts across `api/app.py`, `cli/commands.py`, and `workflows/*.py`
-- Add structured logging, execution IDs, and failure classification for fetch, scan, and ranking workflows
+- Add failure classification for fetch, scan, and ranking workflows
 - Strengthen input validation across all entry points
 
 ### Mid-Term

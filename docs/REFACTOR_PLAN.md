@@ -21,6 +21,7 @@ This document tracks major architectural decisions and their implementation stat
 - Added 8 comprehensive end-to-end parity tests in `test_coordinator_parity.py`
 - Validated identical behavior: live → persisted snapshot → security master fallback
 - Added scoring explainability with score breakdown models, API response types, CLI formatting, and tests
+- Added structured workflow observability with execution IDs in scan/backtest/symbol flows
 
 ### Earlier Completed
 
@@ -32,7 +33,7 @@ This document tracks major architectural decisions and their implementation stat
 
 ## Active Work
 
-- Enhanced observability: structured logging with execution IDs
+- Failure classification for fetch, scan, and ranking workflow errors
 
 ## Active Follow-ups
 
