@@ -53,15 +53,22 @@ NepseSignal should evolve with three consistent goals:
 
 ## Milestones
 
-### Short-Term
+### Short-Term (Completed)
 
 Stabilization phase focused on reliability and contract consistency:
 
-- strengthen input validation across `api/app.py`, `api/service.py`, and `cli/commands.py`
-- increase test coverage to at least 80 percent for service and workflow layers
-- ensure critical workflows such as fetch → scan → rank have failure-path tests
-- standardize output contracts across `api/app.py`, `cli/commands.py`, and `workflows/*.py`
-- add structured logging, execution IDs, and failure classification for fetch, scan, and ranking workflows
+✅ **Completed (2026-04-08)**:
+- Unified NEPSE data access with provider/coordinator/normalizer pattern
+- Migrated CLI, workflows, and API to shared coordinator factory
+- Added end-to-end parity tests for all data paths
+- Locked in force-refresh and fallback semantics across all callers
+- Deprecated legacy fetcher with backward-compatible alias
+
+Remaining stabilization tasks:
+- Increase test coverage to at least 80 percent for service and workflow layers
+- Standardize output contracts across `api/app.py`, `cli/commands.py`, and `workflows/*.py`
+- Add structured logging, execution IDs, and failure classification for fetch, scan, and ranking workflows
+- Strengthen input validation across all entry points
 
 ### Mid-Term
 

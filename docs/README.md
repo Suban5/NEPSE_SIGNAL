@@ -2,25 +2,33 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-05
-Source of Truth: docs/*.md, api/app.py, cli/commands.py, workflows/*.py
+Last Reviewed: 2026-04-08
+Source of Truth: docs/*.md, api/app.py, cli/commands.py, workflows/*.py, nepse_api/*.py
 Validation Method: Code + Tests
 
-## Core Guides
+## Quick Links
 
-- [Getting Started](getting-started.md)
-- [Configuration Reference](configuration.md)
-- [Execution Plan](Execution-Plan.md)
-- [Roadmap](Roadmap.md)
-- [Architecture](architecture.md)
-- [Workflow Reference](workflows.md)
-- [CLI Reference](cli.md)
-- [API Server Guide](api-server.md)
-- [API Contracts](api-contracts.md)
-- [Blue-Chip Scoring](bluechip-scoring.md)
-- [Candlestick Guide](CandelStick.md)
-- [Troubleshooting](troubleshooting.md)
-- [Documentation Standards](standards.md)
+**Starting Out?**
+- [Getting Started](getting-started.md) — setup and first commands
+- [CLI Reference](cli.md) — all command-line options
+- [Configuration Reference](configuration.md) — environment variables and settings
+
+**Architecture & Design:**
+- [Architecture Guide](architecture.md) — system components and data flows
+- [API Contracts](api-contracts.md) — endpoint signatures and error handling
+- [Workflow Reference](workflows.md) — orchestration and execution patterns
+- [Blue-Chip Scoring](bluechip-scoring.md) — ranking logic and explainability
+
+**Operations:**
+- [API Server Guide](api-server.md) — deployment and HTTP usage
+- [Troubleshooting](troubleshooting.md) — common issues and solutions
+- [Execution Plan](Execution-Plan.md) — historical implementation roadmap
+- [Architecture Evolution](REFACTOR_PLAN.md) — completed work and current status
+
+**Exploration:**
+- [Feature Guides](features/README.md) — detailed feature documentation
+- [Candlestick Patterns Guide](CandelStick.md) — technical analysis reference
+- [Roadmap](Roadmap.md) — long-term product direction
 
 ## Feature Guides
 
@@ -33,12 +41,11 @@ Validation Method: Code + Tests
 - [Visualization](features/06-visualization.md)
 - [HTTP API](features/07-api-server.md)
 
-## Governance
+## Documentation Standards
 
-All documentation in this repository must follow:
+All documentation follows [standards.md](standards.md):
 
-- metadata block requirements
-- validated examples only
-- source-of-truth linkage to code
-
-See [standards.md](standards.md) for Definition of Done.
+- Metadata block (Owner, Last Reviewed, Source of Truth, Validation Method)
+- Code examples must be validated
+- References must link to source of truth in codebase
+- Regular review cycle (bi-weekly or per release)

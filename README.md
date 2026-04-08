@@ -3,27 +3,28 @@
 Metadata:
 Owner: suban
 Last Reviewed: 2026-04-08
-Source of Truth: main.py, cli/commands.py, config/settings.py, workflows/*.py, api/app.py
-Validation Method: Code + Tests
+Source of Truth: main.py, cli/commands.py, config/settings.py, workflows/*.py, api/app.py, nepse_api/*.py
+Validation Method: Code + Tests + E2E Parity Tests
 
 NepseSignal is a Python application for NEPSE market analysis with CLI workflows and a FastAPI service.
 
 ## What It Does
 
-- Fetches and normalizes NEPSE market and historical data
-- Builds market universe filters
+- Fetches and normalizes NEPSE market and historical data via unified coordinator
+- Builds market universe filters with deterministic scoring
 - Computes blue-chip scoring with configurable normalization
-- Generates BUY/SELL/HOLD signals with confidence
+- Generates BUY/SELL/HOLD signals with confidence and explainability
 - Ranks opportunities and exports CSV outputs
-- Runs single-symbol and portfolio backtests
+- Runs single-symbol and portfolio backtests with metrics
 - Exposes HTTP API endpoints for market, company, trading, news, mappings, and analytics
 
-Core data-access modules:
+Central architecture:
 
-- nepse_api/providers.py (upstream and persisted providers)
-- nepse_api/normalizers.py (payload normalization)
-- nepse_api/coordinator.py (fetch orchestration and fallback)
-- nepse_api/factory.py (shared wiring for CLI and API)
+- `nepse_api/providers.py` — upstream and persisted data providers with retry/jitter
+- `nepse_api/normalizers.py` — payload normalization to canonical forms
+- `nepse_api/coordinator.py` — fetch orchestration with fallback (live → persisted → security master)
+- `nepse_api/factory.py` — shared wiring for CLI, workflows, and API
+- `tests/test_coordinator_parity.py` — validates identical behavior across CLI/workflow/API paths
 
 ## Documentation
 
