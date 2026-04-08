@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-05
+Last Reviewed: 2026-04-06
 Source of Truth: api/service.py, nepse_api/data_fetcher.py, api/app.py
 Validation Method: Code + Tests
 
@@ -18,6 +18,12 @@ This document explains integration boundaries.
 
 - API service has retry rules for retryable upstream failures.
 - Floor-sheet route supports explicit timeout_seconds query parameter.
+
+## Cache and Persistence
+
+- Fetcher uses hybrid caching: memory cache first, then persistent local datasets, then upstream API.
+- Persistent datasets are stored under data/datasets/snapshots and data/datasets/historical.
+- API routes currently do not expose force-refresh; use CLI workflows with --force-refresh when you need to refresh local datasets immediately.
 
 ## Contract Stability
 

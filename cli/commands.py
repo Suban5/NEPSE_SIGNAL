@@ -18,7 +18,7 @@ from backtesting.backtest_engine import run_backtest, run_portfolio_backtest
 from bluechip.detector import BlueChipDetector, BlueChipScoringConfig
 from candlestick.patterns import detect_patterns
 from market.market_scanner import MarketScanner
-from nepse_api.data_fetcher import NepseDataFetcher
+from nepse_api.factory import build_data_fetch_coordinator
 from ranking.opportunity_ranker import rank_opportunities
 from ranking.stock_ranker import build_ranked_views
 from signals.signal_engine import build_trade_signal
@@ -65,6 +65,7 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     scan_parser.add_argument("--plot", action="store_true", help="Generate mplfinance and plotly charts")
     scan_parser.add_argument("--sector-relative", action="store_true", help="Blend sector-relative blue-chip ranking")
     scan_parser.add_argument("--output", type=str, default="output", help="Output folder path")
+    scan_parser.add_argument("--force-refresh", action="store_true", help="Force refresh data from API, bypass local cache")
 
     backtest_parser = subparsers.add_parser("backtest-market", help="Backtest portfolio from market signals")
     backtest_parser.add_argument("--top-n", type=int, default=20, help="Top N blue-chip symbols for signal set")
@@ -78,6 +79,7 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     )
     backtest_parser.add_argument("--sector-relative", action="store_true", help="Blend sector-relative blue-chip ranking")
     backtest_parser.add_argument("--output", type=str, default="output", help="Output folder path")
+    backtest_parser.add_argument("--force-refresh", action="store_true", help="Force refresh data from API, bypass local cache")
 
     analyze_parser = subparsers.add_parser("analyze", help="Analyze a single stock symbol")
     analyze_parser.add_argument("symbol", type=str, help="Stock symbol (e.g. NABIL)")
@@ -87,6 +89,14 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
 
     health_parser = subparsers.add_parser("health-check", help="Validate NEPSE API connectivity and data fetch")
     health_parser.add_argument("--symbol", type=str, help="Optional symbol for historical data check (e.g. NABIL)")
+
+    top_volume_parser = subparsers.add_parser("top-volume", help="Show highest-volume stocks in live market")
+    top_volume_parser.add_argument("--limit", type=int, default=10, help="Number of symbols to show")
+    top_volume_parser.add_argument(
+        "--force-refresh",
+        action="store_true",
+        help="Force refresh snapshot from API, bypass local cache",
+    )
 
     api_parser = subparsers.add_parser("run-api", help="Run FastAPI wrapper for Postman/API usage")
     api_parser.add_argument("--host", type=str, default="0.0.0.0", help="API server host")
@@ -174,31 +184,6 @@ def _build_bluechip_detector(sector_relative: bool) -> BlueChipDetector:
         return detector_factory()
 
 
-def _build_fundamentals_map(fetcher: NepseDataFetcher, symbols: List[str]) -> Dict[str, Dict[str, float]]:
-    """Fetch and normalize fundamentals for symbols.
-
-    Args:
-        fetcher: NEPSE data fetcher instance.
-        symbols: Symbols to fetch fundamentals for.
-
-    Returns:
-        Mapping of symbol to normalized fundamentals.
-    """
-    fundamentals_map: Dict[str, Dict[str, float]] = {}
-    for symbol in symbols:
-        try:
-            payload = fetcher.fetch_company_fundamentals(symbol)
-            fundamentals_map[symbol] = fetcher.normalize_fundamentals(payload)
-        except Exception as exc:
-            logger.debug("Fundamentals unavailable for %s: %s", symbol, exc)
-            fundamentals_map[symbol] = {
-                "earnings_growth": 0.0,
-                "dividend_stability": 0.0,
-                "revenue_growth": 0.0,
-            }
-    return fundamentals_map
-
-
 def _build_historical_signal_frame(
     symbol: str,
     technical_df: pd.DataFrame,
@@ -217,7 +202,7 @@ def scan_market(args: argparse.Namespace) -> None:
     output_dir = Path(args.output)
     run_market_scan_workflow(
         MarketScanDependencies(
-            fetcher=NepseDataFetcher(),
+            coordinator=build_data_fetch_coordinator(),
             scanner=MarketScanner(),
             detector=_build_bluechip_detector(bool(getattr(args, "sector_relative", False))),
             add_indicators_fn=add_indicators,
@@ -229,6 +214,9 @@ def scan_market(args: argparse.Namespace) -> None:
         output_dir=output_dir,
         top_n=args.top_n,
         plot=args.plot,
+
+
+        force_refresh=bool(getattr(args, "force_refresh", False)),
     )
 
 
@@ -240,7 +228,7 @@ def backtest_market(args: argparse.Namespace) -> None:
     """
     run_market_backtest_workflow(
         MarketBacktestDependencies(
-            fetcher=NepseDataFetcher(),
+            coordinator=build_data_fetch_coordinator(),
             scanner=MarketScanner(),
             detector=_build_bluechip_detector(bool(getattr(args, "sector_relative", False))),
             add_indicators_fn=add_indicators,
@@ -252,9 +240,8 @@ def backtest_market(args: argparse.Namespace) -> None:
         top_n=args.top_n,
         lookback_days=args.lookback_days,
         rebalance=args.rebalance,
+        force_refresh=bool(getattr(args, "force_refresh", False)),
     )
-
-
 def scan_symbol(args: argparse.Namespace) -> None:
     """Execute single-symbol analysis workflow.
 
@@ -263,7 +250,7 @@ def scan_symbol(args: argparse.Namespace) -> None:
     """
     context = run_symbol_analysis_workflow(
         SymbolAnalysisDependencies(
-            fetcher=NepseDataFetcher(),
+            coordinator=build_data_fetch_coordinator(),
             detector=_build_bluechip_detector(bool(getattr(args, "sector_relative", False))),
             detect_patterns_fn=detect_patterns,
             build_trade_signal_fn=build_trade_signal,
@@ -295,10 +282,10 @@ def health_check(args: argparse.Namespace) -> None:
     Args:
         args: CLI arguments.
     """
-    fetcher = NepseDataFetcher()
+    fetcher = build_data_fetch_coordinator()
     logger.info("Health check started")
 
-    snapshot = fetcher.fetch_daily_market_snapshot()
+    snapshot = fetcher.get_market_snapshot()
     if snapshot.empty:
         raise RuntimeError("Health check failed: snapshot endpoint returned no rows")
     logger.info("Snapshot check passed | rows=%d", len(snapshot))
@@ -312,7 +299,7 @@ def health_check(args: argparse.Namespace) -> None:
     if not symbol:
         raise RuntimeError("Health check failed: unable to determine symbol for historical check")
 
-    history = fetcher.fetch_historical_ohlcv(symbol=symbol)
+    history = fetcher.get_historical(symbol=symbol, start=None, end=None)
     if history.empty:
         raise RuntimeError(f"Health check failed: historical endpoint returned no rows for {symbol}")
 
@@ -324,6 +311,33 @@ def health_check(args: argparse.Namespace) -> None:
         history.iloc[-1]["date"],
     )
     logger.info("Health check completed successfully")
+
+
+def top_volume(args: argparse.Namespace) -> None:
+    """Show top traded-volume symbols from live market snapshot.
+
+    Args:
+        args: CLI arguments.
+    """
+    fetcher = build_data_fetch_coordinator()
+    limit = max(1, int(getattr(args, "limit", 10)))
+    force_refresh = bool(getattr(args, "force_refresh", False))
+
+    snapshot = fetcher.get_market_snapshot(force_refresh=force_refresh)
+
+    if snapshot.empty:
+        raise RuntimeError("Top-volume failed: market snapshot is empty")
+
+    if "volume" not in snapshot.columns:
+        raise RuntimeError("Top-volume failed: snapshot has no volume column")
+
+    out = snapshot.copy()
+    out["volume"] = pd.to_numeric(out["volume"], errors="coerce").fillna(0.0)
+    out = out.sort_values("volume", ascending=False).head(limit)
+
+    selected_columns = [col for col in ["symbol", "close", "volume", "turnover", "data_source", "sector"] if col in out.columns]
+    logger.info("Top %d live-market symbols by volume", limit)
+    logger.info("\n%s", out[selected_columns].to_string(index=False))
 
 
 def run_api(args: argparse.Namespace) -> None:
@@ -352,6 +366,8 @@ def run(args: argparse.Namespace) -> None:
             backtest_market(args)
         elif args.command == "health-check":
             health_check(args)
+        elif args.command == "top-volume":
+            top_volume(args)
         elif args.command == "run-api":
             run_api(args)
         elif _legacy_mode_requested(args):
@@ -365,6 +381,7 @@ def run(args: argparse.Namespace) -> None:
                 "python main.py analyze <SYMBOL> [--start-date YYYY-MM-DD --end-date YYYY-MM-DD] OR "
                 "python main.py backtest-market [--top-n N --lookback-days D] OR "
                 "python main.py health-check [--symbol SYMBOL] OR "
+                "python main.py top-volume [--limit N --force-refresh] OR "
                 "python main.py run-api [--host HOST --port PORT --reload]"
             )
     finally:

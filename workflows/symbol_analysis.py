@@ -11,7 +11,6 @@ import pandas as pd
 from analysis.signal_engine import SignalResult
 from backtesting.backtest_engine import BacktestResult, run_backtest
 from bluechip.detector import BlueChipDetector
-from nepse_api.data_fetcher import NepseDataFetcher
 
 from .common import (
     build_fundamentals_map,
@@ -27,7 +26,7 @@ from .context import SymbolAnalysisContext, validate_symbol
 class SymbolAnalysisDependencies:
     """Dependencies required to execute a single-symbol analysis workflow."""
 
-    fetcher: NepseDataFetcher
+    coordinator: Any
     detector: BlueChipDetector
     detect_patterns_fn: Callable[[pd.DataFrame], List[Any]]
     build_trade_signal_fn: Callable[[str, pd.DataFrame, List[Any], float], Any]
@@ -42,16 +41,19 @@ def run_symbol_analysis_workflow(
 ) -> SymbolAnalysisContext:
     """Execute a single-symbol analysis workflow and return the produced context."""
     normalized_symbol = validate_symbol(symbol)
-    history = dependencies.fetcher.fetch_historical_ohlcv(
-        normalized_symbol,
-        start_date=pd.to_datetime(start_date).date() if start_date is not None else None,
-        end_date=pd.to_datetime(end_date).date() if end_date is not None else None,
+    parsed_start = pd.to_datetime(start_date).date() if start_date is not None else None
+    parsed_end = pd.to_datetime(end_date).date() if end_date is not None else None
+    history = dependencies.coordinator.get_historical(
+        symbol=normalized_symbol,
+        start=parsed_start,
+        end=parsed_end,
+        force_refresh=False,
     )
     if history.empty:
         raise RuntimeError(f"No historical OHLCV found for {normalized_symbol}")
 
-    snapshot = fetch_market_snapshot(dependencies.fetcher)
-    fundamentals_map = build_fundamentals_map(dependencies.fetcher, [normalized_symbol])
+    snapshot = fetch_market_snapshot(dependencies.coordinator)
+    fundamentals_map = build_fundamentals_map(dependencies.coordinator, [normalized_symbol])
     feature_df = dependencies.detector.build_feature_table(
         snapshot,
         {normalized_symbol: history},

@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-05
+Last Reviewed: 2026-04-06
 Source of Truth: cli/commands.py, workflows/*.py
 Validation Method: Code + Tests
 
@@ -13,13 +13,14 @@ Entry point: python main.py
 ### scan-market
 
 ```bash
-python main.py scan-market --top-n 15 --plot --sector-relative --output output
+python main.py scan-market --top-n 15 --plot --sector-relative --output output --force-refresh
 ```
 
 - --top-n: int (default 15)
 - --plot: flag
 - --sector-relative: flag
 - --output: str (default output)
+- --force-refresh: flag (default false; bypasses memory and disk cache)
 
 Outputs include ranking CSVs and scan_benchmark.json.
 
@@ -37,7 +38,7 @@ python main.py analyze NABIL --start-date 2024-01-01 --end-date 2026-03-31 --sec
 ### backtest-market
 
 ```bash
-python main.py backtest-market --top-n 20 --lookback-days 252 --rebalance monthly --sector-relative --output output
+python main.py backtest-market --top-n 20 --lookback-days 252 --rebalance monthly --sector-relative --output output --force-refresh
 ```
 
 - --top-n: int (default 20)
@@ -45,14 +46,31 @@ python main.py backtest-market --top-n 20 --lookback-days 252 --rebalance monthl
 - --rebalance: static|weekly|monthly (default static)
 - --sector-relative: flag
 - --output: str (default output)
+- --force-refresh: flag (default false; bypasses memory and disk cache)
 
 Outputs include portfolio_backtest.json, portfolio_signal_set.csv, and backtest_benchmark.json.
+
+## Data Refresh Behavior
+
+- Default: prefers memory cache, then local datasets in data/datasets, then API.
+- With --force-refresh: fetches fresh market snapshot and history from API and updates local datasets.
 
 ### health-check
 
 ```bash
 python main.py health-check --symbol NABIL
 ```
+
+### top-volume
+
+```bash
+python main.py top-volume --limit 10 --force-refresh
+```
+
+- --limit: int (default 10)
+- --force-refresh: flag (default false; bypasses memory and disk cache)
+
+Outputs top live-market symbols sorted by volume with symbol, close, volume, turnover, data_source, and sector.
 
 ### run-api
 

@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-05
+Last Reviewed: 2026-04-06
 Source of Truth: api/app.py, api/models.py, tests/test_api_app.py
 Validation Method: Code + Tests
 
@@ -11,6 +11,12 @@ Validation Method: Code + Tests
 - App: FastAPI(title="NepseSignal API", version="1.0.0")
 - Supported contract versions: v1, v2
 - Contract discovery endpoint: GET /contracts
+
+Data freshness behavior for API-backed analytics routes:
+
+- default fetch path: memory cache -> local datasets -> upstream API
+- no route-level force-refresh query parameter is currently defined in the API contract
+- forced refresh can be triggered via CLI workflows using --force-refresh
 
 ## Core Endpoints
 

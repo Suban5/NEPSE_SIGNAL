@@ -15,7 +15,7 @@ from bluechip.detector import BlueChipDetector, BlueChipScoringConfig
 from candlestick.patterns import detect_patterns
 from config.settings import get_settings
 from market.market_scanner import MarketScanner
-from nepse_api.data_fetcher import NepseDataFetcher
+from nepse_api.factory import build_data_fetch_coordinator
 from ranking.opportunity_ranker import rank_opportunities
 from ranking.stock_ranker import build_ranked_views
 from signals.signal_engine import build_trade_signal
@@ -111,6 +111,7 @@ class NepseApiService:
         self._client = NepseClient(timeout=float(settings.nepse_api_timeout))
         if hasattr(self._client, "setTLSVerification"):
             self._client.setTLSVerification(settings.nepse_tls_verify)
+        self._coordinator = build_data_fetch_coordinator()
         self._caches = {
             "market_status": TTLCache(30.0),
             "market_summary": TTLCache(60.0),
@@ -144,11 +145,10 @@ class NepseApiService:
     def _build_analytics_payload(self, top_n: int, sector_relative: bool) -> Dict[str, Any]:
         """Compute analytics payload by reusing the market scan workflow modules."""
         output_dir = self._analytics_output_dir() / f"scan_top_{top_n}_sector_{int(sector_relative)}"
-        fetcher = NepseDataFetcher()
         detector = BlueChipDetector(config=BlueChipScoringConfig(sector_relative=sector_relative))
         context = run_market_scan_workflow(
             dependencies=MarketScanDependencies(
-                fetcher=fetcher,
+                coordinator=self._coordinator,
                 scanner=MarketScanner(),
                 detector=detector,
                 add_indicators_fn=add_indicators,
@@ -271,7 +271,10 @@ class NepseApiService:
 
     def live_market(self) -> List[Dict[str, Any]]:
         """Return live market rows."""
-        return self._coerce_rows(self._call(self._client, "getLiveMarket"))
+        snapshot_df = self._coordinator.get_market_snapshot(force_refresh=False)
+        if snapshot_df.empty:
+            return []
+        return snapshot_df.to_dict(orient="records")
 
     def price_volume(self) -> Any:
         """Return price-volume payload."""
@@ -322,16 +325,15 @@ class NepseApiService:
         end_date: Optional[date],
     ) -> List[Dict[str, Any]]:
         """Return company price-volume history for date range."""
-        final_end = end_date or date.today()
-        final_start = start_date or (final_end - timedelta(days=365))
-        payload = self._call(
-            self._client,
-            "getCompanyPriceVolumeHistory",
+        history_df = self._coordinator.get_historical(
             symbol=symbol.upper().strip(),
-            start_date=final_start,
-            end_date=final_end,
+            start=start_date,
+            end=end_date,
+            force_refresh=False,
         )
-        return self._coerce_rows(payload)
+        if history_df.empty:
+            return []
+        return history_df.to_dict(orient="records")
 
     def daily_scrip_price_graph(self, symbol: str) -> Any:
         """Return daily scrip price graph payload."""

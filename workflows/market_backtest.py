@@ -30,7 +30,7 @@ from .context import MarketBacktestContext
 class MarketBacktestDependencies:
     """Dependencies required to execute the market backtest workflow."""
 
-    fetcher: Any
+    coordinator: Any
     scanner: MarketScanner
     detector: BlueChipDetector
     add_indicators_fn: Callable[[pd.DataFrame], pd.DataFrame]
@@ -45,21 +45,35 @@ def run_market_backtest_workflow(
     top_n: int,
     lookback_days: int,
     rebalance: str,
+    force_refresh: bool = False,
 ) -> MarketBacktestContext:
-    """Execute the portfolio backtest workflow and return the produced context."""
+    """Execute the portfolio backtest workflow and return the produced context.
+    
+    Args:
+        dependencies: Workflow dependencies.
+        output_dir: Output directory path.
+        top_n: Number of top stocks to analyze.
+        lookback_days: Number of days to backtest.
+        rebalance: Rebalancing strategy.
+        force_refresh: If True, bypass cache and fetch fresh data from API.
+    """
     started_at = time.perf_counter()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fetch_started = time.perf_counter()
-    snapshot = fetch_market_snapshot(dependencies.fetcher)
-    historical_universe = fetch_historical_universe(dependencies.fetcher, lookback_years=5)
+    snapshot = fetch_market_snapshot(dependencies.coordinator, force_refresh=force_refresh)
+    historical_universe = fetch_historical_universe(
+        dependencies.coordinator,
+        lookback_years=5,
+        force_refresh=force_refresh,
+    )
     symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
     fetch_elapsed = time.perf_counter() - fetch_started
     if not symbols:
         raise RuntimeError("No symbols passed market universe filters.")
 
     score_started = time.perf_counter()
-    fundamentals_map = build_fundamentals_map(dependencies.fetcher, symbols)
+    fundamentals_map = build_fundamentals_map(dependencies.coordinator, symbols)
     features = dependencies.detector.build_feature_table(snapshot, filtered_history, fundamentals=fundamentals_map)
     bluechip_ranked = dependencies.detector.score_bluechips(features)
     score_elapsed = time.perf_counter() - score_started

@@ -12,6 +12,7 @@ import pandas as pd
 
 from bluechip.detector import BlueChipDetector
 from market.market_scanner import MarketScanner
+from workflows.common import build_fundamentals_map, fetch_market_snapshot
 from workflows.market_backtest import MarketBacktestDependencies, run_market_backtest_workflow
 from workflows.market_scan import MarketScanDependencies, run_market_scan_workflow
 from workflows.symbol_analysis import SymbolAnalysisDependencies, run_symbol_analysis_workflow
@@ -48,28 +49,31 @@ def _build_history(symbol: str, base: float) -> pd.DataFrame:
     )
 
 
-def _fetcher() -> Any:
-    fetcher = SimpleNamespace()
-    fetcher.fetch_daily_market_snapshot = lambda: _build_snapshot()
-    fetcher.fetch_symbols = lambda: _build_snapshot()[["symbol", "sector", "market_cap"]]
-    fetcher.fetch_universe_with_history = lambda lookback_years=5: {
+def _coordinator() -> Any:
+    coordinator = SimpleNamespace()
+    coordinator.get_market_snapshot = lambda force_refresh=False: _build_snapshot()
+    coordinator.get_universe_with_history = lambda lookback_years=5, force_refresh=False: {
         "AAA": _build_history("AAA", 100.0),
         "BBB": _build_history("BBB", 200.0),
     }
-    fetcher.fetch_company_fundamentals = lambda symbol: {"epsGrowth": 10.0, "salesGrowth": 8.0, "dividendYield": 3.0}
-    fetcher.normalize_fundamentals = lambda payload: {
+    coordinator.fetch_company_fundamentals = lambda symbol: {
+        "epsGrowth": 10.0,
+        "salesGrowth": 8.0,
+        "dividendYield": 3.0,
+    }
+    coordinator.normalize_fundamentals = lambda payload: {
         "earnings_growth": 10.0,
         "dividend_stability": 3.0,
         "revenue_growth": 8.0,
     }
-    fetcher.fetch_historical_ohlcv = lambda symbol, start_date=None, end_date=None: _build_history(symbol, 100.0)
-    return cast(Any, fetcher)
+    coordinator.get_historical = lambda symbol, start=None, end=None, force_refresh=False: _build_history(symbol, 100.0)
+    return cast(Any, coordinator)
 
 
 def test_market_scan_workflow_writes_outputs(tmp_path: Path) -> None:
     """Market scan workflow should produce ranking files and a typed context."""
     dependencies = MarketScanDependencies(
-        fetcher=_fetcher(),
+        coordinator=_coordinator(),
         scanner=MarketScanner(),
         detector=BlueChipDetector(),
         add_indicators_fn=lambda frame: frame.assign(
@@ -113,7 +117,7 @@ def test_market_scan_workflow_writes_outputs(tmp_path: Path) -> None:
 def test_market_backtest_workflow_writes_outputs(tmp_path: Path) -> None:
     """Market backtest workflow should produce portfolio outputs and selected symbols."""
     dependencies = MarketBacktestDependencies(
-        fetcher=_fetcher(),
+        coordinator=_coordinator(),
         scanner=MarketScanner(),
         detector=BlueChipDetector(),
         add_indicators_fn=lambda frame: frame.assign(
@@ -150,7 +154,7 @@ def test_market_backtest_workflow_writes_outputs(tmp_path: Path) -> None:
 def test_symbol_analysis_workflow_returns_context() -> None:
     """Symbol analysis workflow should return a typed context with results."""
     dependencies = SymbolAnalysisDependencies(
-        fetcher=_fetcher(),
+        coordinator=_coordinator(),
         detector=BlueChipDetector(),
         detect_patterns_fn=lambda _df: [],
         build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
@@ -177,3 +181,45 @@ def test_symbol_analysis_workflow_returns_context() -> None:
     assert context.bluechip_score >= 0.0
     assert context.signal.signal == "BUY"
     assert context.backtest is not None
+
+
+def test_build_fundamentals_map_stops_after_first_failure() -> None:
+    """Fundamentals fetch should disable repeated upstream calls after a failure."""
+
+    class _Fetcher:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def fetch_company_fundamentals(self, symbol: str):
+            self.calls += 1
+            return {}
+
+        def normalize_fundamentals(self, payload):
+            return {
+                "earnings_growth": 0.0,
+                "dividend_stability": 0.0,
+                "revenue_growth": 0.0,
+            }
+
+    fetcher = _Fetcher()
+    result = build_fundamentals_map(fetcher, ["AAA", "BBB", "CCC"])
+
+    assert fetcher.calls == 1
+    assert set(result.keys()) == {"AAA", "BBB", "CCC"}
+    assert all(values["earnings_growth"] == 0.0 for values in result.values())
+
+
+def test_fetch_market_snapshot_logs_source_breakdown(caplog) -> None:
+    """Snapshot fetch should log source summary when data_source is available."""
+    coordinator = _coordinator()
+    coordinator.get_market_snapshot = lambda force_refresh=False: _build_snapshot().assign(
+        data_source=["historical_fallback", "security_master_fallback"]
+    )
+
+    with caplog.at_level("INFO"):
+        snapshot = fetch_market_snapshot(coordinator)
+
+    assert len(snapshot) == 2
+    assert "Snapshot source breakdown:" in caplog.text
+    assert "historical_fallback=1" in caplog.text
+    assert "security_master_fallback=1" in caplog.text

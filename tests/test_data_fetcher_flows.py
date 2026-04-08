@@ -94,9 +94,11 @@ def test_fetch_daily_market_snapshot_success(monkeypatch: pytest.MonkeyPatch) ->
     assert len(snapshot) == 2
     assert "symbol" in snapshot.columns
     assert "close" in snapshot.columns
+    assert "data_source" in snapshot.columns
     assert snapshot.iloc[0]["symbol"] == "NABIL"
     assert snapshot.iloc[0]["close"] == 1010
     assert snapshot.iloc[1]["symbol"] == "SCB"
+    assert (snapshot["data_source"] == "live_market").all()
 
 
 def test_fetch_daily_market_snapshot_empty_response(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -178,6 +180,62 @@ def test_fetch_daily_market_snapshot_coerces_numeric_types(monkeypatch: pytest.M
 
     assert snapshot.iloc[0]["close"] == 1010.0
     assert snapshot.iloc[0]["volume"] == 10000.0
+
+
+def test_fetch_daily_market_snapshot_hydrates_fallback_from_local_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fallback snapshot should use latest local historical OHLCV when available."""
+    fetcher = _setup_fake_fetcher(monkeypatch)
+
+    def mock_call(method_name: str, **kwargs: Any) -> Any:
+        if method_name == "getLiveMarket":
+            return []
+        if method_name == "getSecurityList":
+            return [{"symbol": "NABIL"}, {"symbol": "SCB"}]
+        return []
+
+    monkeypatch.setattr(fetcher, "_call_unofficial_client", mock_call)
+
+    class _FakePersistence:
+        def load_universe(self, symbols: list[str]) -> dict[str, pd.DataFrame]:
+            del symbols
+            return {
+                "NABIL": pd.DataFrame(
+                    [
+                        {
+                            "date": pd.to_datetime("2026-04-04"),
+                            # Intentionally missing open/high/low to verify close-based fallback.
+                            "close": 1010.0,
+                            "volume": 12345.0,
+                            "turnover": 12468450.0,
+                        }
+                    ]
+                )
+            }
+
+        def save_snapshot(self, snapshot_df: pd.DataFrame) -> None:
+            del snapshot_df
+
+    fetcher._persistence = _FakePersistence()
+
+    snapshot = fetcher.fetch_daily_market_snapshot(force_refresh=True)
+    nabil = snapshot[snapshot["symbol"] == "NABIL"].iloc[0]
+    scb = snapshot[snapshot["symbol"] == "SCB"].iloc[0]
+
+    assert nabil["close"] == 1010.0
+    assert nabil["open"] == 1010.0
+    assert nabil["high"] == 1010.0
+    assert nabil["low"] == 1010.0
+    assert nabil["volume"] == 12345.0
+    assert nabil["data_source"] == "historical_fallback"
+    # Symbols without local history remain zero-filled in fallback mode.
+    assert scb["close"] == 0.0
+    assert scb["open"] == 0.0
+    assert scb["high"] == 0.0
+    assert scb["low"] == 0.0
+    assert scb["volume"] == 0.0
+    assert scb["data_source"] == "security_master_fallback"
 
 
 # --- Test fetch_historical_ohlcv() ---
@@ -389,6 +447,48 @@ def test_fetch_symbols_returns_dataframe(monkeypatch: pytest.MonkeyPatch) -> Non
 
     assert isinstance(symbols, pd.DataFrame)
     assert "symbol" in symbols.columns
+
+
+def test_fetch_symbols_enriches_sector_from_sector_scrips(monkeypatch: pytest.MonkeyPatch) -> None:
+    """fetch_symbols should enrich sectors from getSectorScrips when available."""
+    fetcher = _setup_fake_fetcher(monkeypatch)
+
+    def mock_call(method_name: str, **kwargs: Any) -> Any:
+        if method_name == "getSecurityList":
+            return [{"symbol": "NABIL"}, {"symbol": "SHIVM"}]
+        if method_name == "getSectorScrips":
+            return {
+                "Commercial Banks": ["NABIL"],
+                "Manufacturing And Processing": ["SHIVM"],
+            }
+        return []
+
+    monkeypatch.setattr(fetcher, "_call_unofficial_client", mock_call)
+    monkeypatch.setattr(fetcher, "_load_sector_lookup_from_file", lambda: {})
+
+    symbols = fetcher.fetch_symbols()
+    by_symbol = symbols.set_index("symbol")
+
+    assert by_symbol.loc["NABIL", "sector"] == "Commercial Banks"
+    assert by_symbol.loc["SHIVM", "sector"] == "Manufacturing And Processing"
+
+
+def test_fetch_symbols_local_sector_file_overrides_api(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Local sector master should override API sector mapping when provided."""
+    fetcher = _setup_fake_fetcher(monkeypatch)
+
+    def mock_call(method_name: str, **kwargs: Any) -> Any:
+        if method_name == "getSecurityList":
+            return [{"symbol": "SHIVM"}]
+        if method_name == "getSectorScrips":
+            return {"Hydro Power": ["SHIVM"]}
+        return []
+
+    monkeypatch.setattr(fetcher, "_call_unofficial_client", mock_call)
+    monkeypatch.setattr(fetcher, "_load_sector_lookup_from_file", lambda: {"SHIVM": "Cement"})
+
+    symbols = fetcher.fetch_symbols()
+    assert symbols.iloc[0]["sector"] == "Cement"
 
 
 # --- Test fetch_universe_with_history() ---

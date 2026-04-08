@@ -129,6 +129,22 @@ def test_parse_args_health_check_with_symbol() -> None:
     assert args.symbol == "NABIL"
 
 
+def test_parse_args_top_volume_subcommand() -> None:
+    """parse_args should parse top-volume subcommand with defaults."""
+    args = commands.parse_args(["top-volume"])
+    assert args.command == "top-volume"
+    assert args.limit == 10
+    assert args.force_refresh is False
+
+
+def test_parse_args_top_volume_with_options() -> None:
+    """parse_args should parse top-volume with custom options."""
+    args = commands.parse_args(["top-volume", "--limit", "15", "--force-refresh"])
+    assert args.command == "top-volume"
+    assert args.limit == 15
+    assert args.force_refresh is True
+
+
 def test_parse_args_run_api_subcommand() -> None:
     """parse_args should parse run-api subcommand with defaults."""
     args = commands.parse_args(["run-api"])
@@ -190,6 +206,17 @@ def test_run_dispatches_health_check_command(monkeypatch) -> None:
     commands.run(args)
     
     assert mock_health.called
+
+
+def test_run_dispatches_top_volume_command(monkeypatch) -> None:
+    """run() should dispatch to top_volume handler."""
+    mock_top_volume = MagicMock()
+    monkeypatch.setattr(commands, "top_volume", mock_top_volume)
+
+    args = argparse.Namespace(command="top-volume", limit=10, force_refresh=False)
+    commands.run(args)
+
+    assert mock_top_volume.called
 
 
 def test_run_dispatches_run_api_command(monkeypatch) -> None:

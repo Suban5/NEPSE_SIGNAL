@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-05
+Last Reviewed: 2026-04-06
 Source of Truth: api/app.py, api/service.py, api/models.py
 Validation Method: Code + Tests
 
@@ -30,6 +30,16 @@ The API middleware sets:
 - X-Request-Id
 - X-API-Contract-Version
 - X-API-Supported-Versions
+
+## Data Fetch and Cache Behavior
+
+API requests use the same hybrid fetch path as application workflows:
+
+- in-memory TTL cache
+- local datasets in data/datasets
+- upstream API fetch as fallback
+
+Current API routes do not expose a force-refresh query parameter. For a forced refresh, run the CLI market workflows with --force-refresh before calling analytics endpoints.
 
 ## Endpoint Groups
 

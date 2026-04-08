@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-05
+Last Reviewed: 2026-04-06
 Source of Truth: config/settings.py, .env.example
 Validation Method: Code + Tests
 
@@ -30,6 +30,27 @@ All runtime settings are loaded from environment variables in config/settings.py
 - CACHE_RANKING_TTL_SECONDS (default: 90)
 - CACHE_MAX_ENTRIES (default: 5000)
 - DATA_CACHE_PATH (default: ./data)
+- SECTOR_MASTER_PATH (default: ./data/datasets/sector_master.csv)
+
+Cache behavior is hybrid:
+
+- in-memory TTL cache for fast repeat reads inside a process
+- persistent dataset cache on disk under data/datasets
+
+Persistent dataset layout:
+
+- data/datasets/snapshots/market_snapshot_YYYY-MM-DD.csv
+- data/datasets/snapshots/market_snapshot_latest.csv
+- data/datasets/historical/<SYMBOL>_history.csv
+- data/datasets/sector_master.csv (optional symbol to sector override)
+
+Sector enrichment behavior:
+
+- Primary source: upstream sector mapping from getSectorScrips
+- Optional override source: SECTOR_MASTER_PATH CSV with columns symbol,sector
+- Local CSV values override upstream mapping for matching symbols
+
+Use CLI flag --force-refresh on scan-market and backtest-market to bypass cache and fetch from API.
 
 ## Blue-Chip Scoring
 

@@ -10,12 +10,15 @@ Validation Method: Code + Tests
 
 - [Getting Started](getting-started.md)
 - [Configuration Reference](configuration.md)
+- [Execution Plan](Execution-Plan.md)
+- [Roadmap](Roadmap.md)
 - [Architecture](architecture.md)
 - [Workflow Reference](workflows.md)
 - [CLI Reference](cli.md)
 - [API Server Guide](api-server.md)
 - [API Contracts](api-contracts.md)
 - [Blue-Chip Scoring](bluechip-scoring.md)
+- [Candlestick Guide](CandelStick.md)
 - [Troubleshooting](troubleshooting.md)
 - [Documentation Standards](standards.md)
 

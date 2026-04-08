@@ -42,6 +42,7 @@ class Settings:
     bluechip_upper_quantile: float = float(os.getenv("BLUECHIP_UPPER_QUANTILE", "0.95"))
 
     data_cache_path: str = os.getenv("DATA_CACHE_PATH", "./data")
+    sector_master_path: str = os.getenv("SECTOR_MASTER_PATH", "./data/datasets/sector_master.csv")
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     third_party_log_level: str = os.getenv("THIRD_PARTY_LOG_LEVEL", "WARNING")
     suppress_unofficial_client_output: bool = os.getenv("SUPPRESS_UNOFFICIAL_CLIENT_OUTPUT", "true").lower() in {

@@ -30,7 +30,7 @@ from .context import MarketScanContext
 class MarketScanDependencies:
     """Dependencies required to execute the market scan workflow."""
 
-    fetcher: Any
+    coordinator: Any
     scanner: MarketScanner
     detector: BlueChipDetector
     add_indicators_fn: Callable[[pd.DataFrame], pd.DataFrame]
@@ -46,21 +46,35 @@ def run_market_scan_workflow(
     top_n: int,
     plot: bool,
     save_chart_fn: Callable[[pd.DataFrame, str, str], None] = render_charts,
+    force_refresh: bool = False,
 ) -> MarketScanContext:
-    """Execute the full market scan workflow and return the produced context."""
+    """Execute the full market scan workflow and return the produced context.
+    
+    Args:
+        dependencies: Workflow dependencies.
+        output_dir: Output directory path.
+        top_n: Number of top stocks to analyze.
+        plot: Whether to generate charts.
+        save_chart_fn: Function to save charts.
+        force_refresh: If True, bypass cache and fetch fresh data from API.
+    """
     started_at = time.perf_counter()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fetch_started = time.perf_counter()
-    snapshot = fetch_market_snapshot(dependencies.fetcher)
-    historical_universe = fetch_historical_universe(dependencies.fetcher, lookback_years=5)
+    snapshot = fetch_market_snapshot(dependencies.coordinator, force_refresh=force_refresh)
+    historical_universe = fetch_historical_universe(
+        dependencies.coordinator,
+        lookback_years=5,
+        force_refresh=force_refresh,
+    )
     symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
     fetch_elapsed = time.perf_counter() - fetch_started
     if not symbols:
         raise RuntimeError("No symbols passed market universe filters.")
 
     score_started = time.perf_counter()
-    fundamentals_map = build_fundamentals_map(dependencies.fetcher, symbols)
+    fundamentals_map = build_fundamentals_map(dependencies.coordinator, symbols)
     features = dependencies.detector.build_feature_table(snapshot, filtered_history, fundamentals=fundamentals_map)
     bluechip_ranked = dependencies.detector.score_bluechips(features)
     score_elapsed = time.perf_counter() - score_started

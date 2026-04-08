@@ -24,6 +24,10 @@ def save_mplfinance_chart(df: pd.DataFrame, symbol: str, output_dir: str) -> Opt
         Saved image path if mplfinance is available; otherwise None.
     """
     try:
+        import matplotlib
+        # Use a non-interactive backend so chart rendering works from worker threads.
+        if "agg" not in str(matplotlib.get_backend()).lower():
+            matplotlib.use("Agg", force=True)
         import mplfinance as mpf
     except ImportError:
         logger.warning("mplfinance is not installed. Skipping PNG chart for %s", symbol)

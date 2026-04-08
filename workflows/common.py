@@ -54,12 +54,31 @@ def _ranking_cache_key(bluechip_ranked: pd.DataFrame, signal_df: pd.DataFrame) -
 
 
 def build_fundamentals_map(fetcher: Any, symbols: List[str]) -> Dict[str, Dict[str, float]]:
-    """Fetch and normalize fundamentals for a symbol list."""
+    """Fetch and normalize fundamentals for a symbol list.
+
+    If the first fundamentals request fails or returns an empty payload, the
+    function stops calling the upstream endpoint for the remaining symbols and
+    falls back to default metrics. This prevents retry storms when the
+    fundamentals endpoint is unavailable.
+    """
     fundamentals_map: Dict[str, Dict[str, float]] = {}
+    fundamentals_enabled = True
     for symbol in symbols:
+        if not fundamentals_enabled:
+            fundamentals_map[symbol] = {
+                "earnings_growth": 0.0,
+                "dividend_stability": 0.0,
+                "revenue_growth": 0.0,
+            }
+            continue
+
         try:
             payload = fetcher.fetch_company_fundamentals(symbol)
-            fundamentals_map[symbol] = fetcher.normalize_fundamentals(payload)
+            normalized = fetcher.normalize_fundamentals(payload)
+            fundamentals_map[symbol] = normalized
+            if not payload:
+                logger.warning("Fundamentals endpoint unavailable; skipping remaining fundamentals requests")
+                fundamentals_enabled = False
         except Exception as exc:
             logger.debug("Fundamentals unavailable for %s: %s", symbol, exc)
             fundamentals_map[symbol] = {
@@ -67,6 +86,7 @@ def build_fundamentals_map(fetcher: Any, symbols: List[str]) -> Dict[str, Dict[s
                 "dividend_stability": 0.0,
                 "revenue_growth": 0.0,
             }
+            fundamentals_enabled = False
     return fundamentals_map
 
 
@@ -150,24 +170,49 @@ def write_benchmark_snapshot(output_dir: Path, file_name: str, payload: Dict[str
     (output_dir / file_name).write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
 
 
-def fetch_market_snapshot(fetcher: Any) -> pd.DataFrame:
-    """Fetch live snapshot with securities fallback."""
-    try:
-        snapshot = fetcher.fetch_daily_market_snapshot()
-    except Exception as exc:
-        logger.warning("Live market snapshot unavailable, using securities fallback: %s", exc)
-        snapshot = fetcher.fetch_symbols()
+
+
+def fetch_market_snapshot(coordinator: Any, force_refresh: bool = False) -> pd.DataFrame:
+    """Fetch live snapshot via coordinator.
+    
+    Args:
+        coordinator: Data fetch coordinator instance.
+        force_refresh: If True, bypass cache and fetch from API.
+    """
+    snapshot = coordinator.get_market_snapshot(force_refresh=force_refresh)
+
     validate_snapshot(snapshot)
+    log_snapshot_source_summary(snapshot)
     return snapshot
 
 
-def fetch_historical_universe(fetcher: Any, lookback_years: int = 5) -> Dict[str, pd.DataFrame]:
-    """Fetch and validate the historical market universe."""
-    historical_universe = fetcher.fetch_universe_with_history(lookback_years=lookback_years)
+def log_snapshot_source_summary(snapshot: pd.DataFrame) -> None:
+    """Log row count breakdown by snapshot data source when available."""
+    if "data_source" not in snapshot.columns:
+        return
+
+    source_counts = snapshot["data_source"].fillna("unknown").astype(str).value_counts()
+    if source_counts.empty:
+        return
+
+    breakdown = ", ".join([f"{source}={int(count)}" for source, count in source_counts.items()])
+    logger.info("Snapshot source breakdown: %s", breakdown)
+
+
+def fetch_historical_universe(coordinator: Any, lookback_years: int = 5, force_refresh: bool = False) -> Dict[str, pd.DataFrame]:
+    """Fetch and validate the historical market universe.
+    
+    Args:
+        coordinator: Data fetch coordinator instance.
+        lookback_years: Number of years of history to retrieve.
+        force_refresh: If True, bypass cache and fetch from API.
+    """
+    historical_universe = coordinator.get_universe_with_history(
+        lookback_years=lookback_years,
+        force_refresh=force_refresh,
+    )
     validate_historical_universe(historical_universe)
     return historical_universe
-
-
 def build_signal_row(
     symbol: str,
     bluechip_score: float,

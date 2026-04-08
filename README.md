@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-05
+Last Reviewed: 2026-04-08
 Source of Truth: main.py, cli/commands.py, config/settings.py, workflows/*.py, api/app.py
 Validation Method: Code + Tests
 
@@ -18,6 +18,13 @@ NepseSignal is a Python application for NEPSE market analysis with CLI workflows
 - Runs single-symbol and portfolio backtests
 - Exposes HTTP API endpoints for market, company, trading, news, mappings, and analytics
 
+Core data-access modules:
+
+- nepse_api/providers.py (upstream and persisted providers)
+- nepse_api/normalizers.py (payload normalization)
+- nepse_api/coordinator.py (fetch orchestration and fallback)
+- nepse_api/factory.py (shared wiring for CLI and API)
+
 ## Documentation
 
 - [Documentation Index](docs/README.md)
@@ -28,6 +35,7 @@ NepseSignal is a Python application for NEPSE market analysis with CLI workflows
 - [Workflow Reference](docs/workflows.md)
 - [Configuration Reference](docs/configuration.md)
 - [Blue-Chip Scoring](docs/bluechip-scoring.md)
+- [Candlestick Guide](docs/CandelStick.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Setup
@@ -43,11 +51,22 @@ cp .env.example .env
 
 ```bash
 python main.py scan-market --top-n 20 --plot --output output
+python main.py scan-market --top-n 20 --plot --output output --force-refresh
 python main.py analyze NABIL --start-date 2024-01-01 --end-date 2026-03-31
 python main.py backtest-market --top-n 20 --lookback-days 252 --rebalance monthly --output output
+python main.py backtest-market --top-n 20 --lookback-days 252 --rebalance monthly --output output --force-refresh
+python main.py top-volume --limit 10 --force-refresh
 python main.py health-check --symbol NABIL
 python main.py run-api --host 0.0.0.0 --port 8000 --reload
 ```
+
+`--force-refresh` bypasses local and in-memory caches and fetches fresh data from the API.
+
+Snapshot fallback order:
+
+1. live_market from upstream provider
+2. latest persisted snapshot on disk
+3. security master metadata fallback
 
 ## API Server
 
@@ -72,6 +91,19 @@ Common output files under output directory:
 - portfolio_backtest.json
 - portfolio_signal_set.csv
 - backtest_benchmark.json
+
+Persistent fetched datasets under data/datasets:
+
+- snapshots/market_snapshot_YYYY-MM-DD.csv
+- snapshots/market_snapshot_latest.csv
+- historical/<SYMBOL>_history.csv
+- sector_master.csv (optional local symbol to sector override)
+
+Snapshot files include a data source marker per row:
+
+- live_market
+- historical_fallback
+- security_master_fallback
 
 ## Testing
 
