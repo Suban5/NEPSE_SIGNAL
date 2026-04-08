@@ -22,6 +22,7 @@ class MarketScanContext:
     filtered_history: Dict[str, pd.DataFrame]
     bluechip_ranked: pd.DataFrame
     signal_df: pd.DataFrame
+    execution_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ class MarketBacktestContext:
     bluechip_ranked: pd.DataFrame
     signal_df: pd.DataFrame
     selected_buy_symbols: List[str]
+    execution_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,7 @@ class SymbolAnalysisContext:
     technical_df: pd.DataFrame
     signal: Any
     backtest: Any
+    execution_id: str = ""
 
 
 def validate_snapshot(snapshot: pd.DataFrame) -> None:

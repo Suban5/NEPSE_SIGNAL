@@ -48,7 +48,6 @@ NepseSignal should evolve with three consistent goals:
 - inconsistent response schema between API and CLI paths
 - duplicated logic between service and workflow layers
 - limited error handling in data fetch workflows
-- lack of scoring transparency in ranking outputs
 - insufficient test coverage in `workflows/*`
 
 ## Milestones
@@ -76,7 +75,6 @@ Platform consistency, technical debt reduction, and contract stability:
 
 - reduce duplicate logic across `api/service.py`, `cli/commands.py`, and `workflows/*.py`
 - enforce a single source of truth for scoring logic in `bluechip/detector.py` and related ranking modules
-- improve scoring explainability by exposing score breakdowns and ranking rationale in API and CLI outputs
 - introduce versioned API responses and define backward compatibility rules
 - add backtesting validation against historical NEPSE data and expose summary results via API and CLI
 - enhance documentation around contracts, configuration behavior, and scoring logic

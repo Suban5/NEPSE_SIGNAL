@@ -21,6 +21,8 @@ from .common import (
     detect_market_patterns,
     fetch_historical_universe,
     fetch_market_snapshot,
+    log_workflow_event,
+    new_execution_id,
     rank_signal_frame,
 )
 from .context import MarketBacktestContext
@@ -58,14 +60,32 @@ def run_market_backtest_workflow(
         force_refresh: If True, bypass cache and fetch fresh data from API.
     """
     started_at = time.perf_counter()
+    execution_id = new_execution_id("market-backtest")
     output_dir.mkdir(parents=True, exist_ok=True)
+    log_workflow_event(
+        workflow="market_backtest",
+        execution_id=execution_id,
+        event="workflow_started",
+        top_n=int(top_n),
+        lookback_days=int(lookback_days),
+        rebalance=rebalance,
+        force_refresh=bool(force_refresh),
+        output_dir=str(output_dir),
+    )
 
     fetch_started = time.perf_counter()
-    snapshot = fetch_market_snapshot(dependencies.coordinator, force_refresh=force_refresh)
+    snapshot = fetch_market_snapshot(
+        dependencies.coordinator,
+        force_refresh=force_refresh,
+        execution_id=execution_id,
+        workflow_name="market_backtest",
+    )
     historical_universe = fetch_historical_universe(
         dependencies.coordinator,
         lookback_years=5,
         force_refresh=force_refresh,
+        execution_id=execution_id,
+        workflow_name="market_backtest",
     )
     symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
     fetch_elapsed = time.perf_counter() - fetch_started
@@ -122,6 +142,7 @@ def run_market_backtest_workflow(
         output_dir=output_dir,
         file_name="backtest_benchmark.json",
         payload={
+            "execution_id": execution_id,
             "total_seconds": round(total_elapsed, 6),
             "timings": {
                 "fetch_seconds": round(fetch_elapsed, 6),
@@ -141,6 +162,14 @@ def run_market_backtest_workflow(
             },
         },
     )
+    log_workflow_event(
+        workflow="market_backtest",
+        execution_id=execution_id,
+        event="workflow_completed",
+        total_seconds=round(total_elapsed, 6),
+        symbols=int(len(symbols)),
+        buy_symbols=int(len(buy_symbols)),
+    )
 
     (output_dir / "portfolio_backtest.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     signal_df.to_csv(output_dir / "portfolio_signal_set.csv", index=False)
@@ -150,6 +179,7 @@ def run_market_backtest_workflow(
         top_n=top_n,
         lookback_days=lookback_days,
         rebalance=rebalance,
+        execution_id=execution_id,
         snapshot=snapshot,
         historical_universe=historical_universe,
         symbols=symbols,

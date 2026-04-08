@@ -18,7 +18,9 @@ from .common import (
     compute_symbol_signal_rows,
     fetch_historical_universe,
     fetch_market_snapshot,
+    log_workflow_event,
     log_ranked_summary,
+    new_execution_id,
     save_outputs,
     write_benchmark_snapshot,
     render_charts,
@@ -59,14 +61,31 @@ def run_market_scan_workflow(
         force_refresh: If True, bypass cache and fetch fresh data from API.
     """
     started_at = time.perf_counter()
+    execution_id = new_execution_id("market-scan")
     output_dir.mkdir(parents=True, exist_ok=True)
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="workflow_started",
+        top_n=int(top_n),
+        plot=bool(plot),
+        force_refresh=bool(force_refresh),
+        output_dir=str(output_dir),
+    )
 
     fetch_started = time.perf_counter()
-    snapshot = fetch_market_snapshot(dependencies.coordinator, force_refresh=force_refresh)
+    snapshot = fetch_market_snapshot(
+        dependencies.coordinator,
+        force_refresh=force_refresh,
+        execution_id=execution_id,
+        workflow_name="market_scan",
+    )
     historical_universe = fetch_historical_universe(
         dependencies.coordinator,
         lookback_years=5,
         force_refresh=force_refresh,
+        execution_id=execution_id,
+        workflow_name="market_scan",
     )
     symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
     fetch_elapsed = time.perf_counter() - fetch_started
@@ -108,13 +127,14 @@ def run_market_scan_workflow(
     save_started = time.perf_counter()
     save_outputs(output_dir, bluechip_ranked, signal_df, views)
     save_elapsed = time.perf_counter() - save_started
-    log_ranked_summary(views)
+    log_ranked_summary(views, execution_id=execution_id, workflow_name="market_scan")
 
     total_elapsed = time.perf_counter() - started_at
     write_benchmark_snapshot(
         output_dir=output_dir,
         file_name="scan_benchmark.json",
         payload={
+            "execution_id": execution_id,
             "total_seconds": round(total_elapsed, 6),
             "timings": {
                 "fetch_seconds": round(fetch_elapsed, 6),
@@ -132,11 +152,20 @@ def run_market_scan_workflow(
             },
         },
     )
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="workflow_completed",
+        total_seconds=round(total_elapsed, 6),
+        symbols=int(len(symbols)),
+        selected_symbols=int(len(selected_symbols)),
+    )
 
     return MarketScanContext(
         output_dir=output_dir,
         top_n=top_n,
         plot=plot,
+        execution_id=execution_id,
         snapshot=snapshot,
         historical_universe=historical_universe,
         symbols=symbols,

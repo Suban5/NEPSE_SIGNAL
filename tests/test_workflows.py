@@ -110,6 +110,9 @@ def test_market_scan_workflow_writes_outputs(tmp_path: Path) -> None:
     assert (tmp_path / "signal_summary.csv").exists()
     assert (tmp_path / "scan_benchmark.json").exists()
     benchmark_payload = json.loads((tmp_path / "scan_benchmark.json").read_text(encoding="utf-8"))
+    assert isinstance(context.execution_id, str)
+    assert context.execution_id
+    assert benchmark_payload.get("execution_id") == context.execution_id
     assert "timings" in benchmark_payload
     assert "total_seconds" in benchmark_payload
 
@@ -147,6 +150,9 @@ def test_market_backtest_workflow_writes_outputs(tmp_path: Path) -> None:
     assert (tmp_path / "portfolio_signal_set.csv").exists()
     assert (tmp_path / "backtest_benchmark.json").exists()
     benchmark_payload = json.loads((tmp_path / "backtest_benchmark.json").read_text(encoding="utf-8"))
+    assert isinstance(context.execution_id, str)
+    assert context.execution_id
+    assert benchmark_payload.get("execution_id") == context.execution_id
     assert "timings" in benchmark_payload
     assert "total_seconds" in benchmark_payload
 
@@ -178,6 +184,8 @@ def test_symbol_analysis_workflow_returns_context() -> None:
     context = run_symbol_analysis_workflow(dependencies, symbol="AAA", start_date=None, end_date=None)
 
     assert context.symbol == "AAA"
+    assert isinstance(context.execution_id, str)
+    assert context.execution_id
     assert context.bluechip_score >= 0.0
     assert context.signal.signal == "BUY"
     assert context.backtest is not None
@@ -217,9 +225,9 @@ def test_fetch_market_snapshot_logs_source_breakdown(caplog) -> None:
     )
 
     with caplog.at_level("INFO"):
-        snapshot = fetch_market_snapshot(coordinator)
+        snapshot = fetch_market_snapshot(coordinator, execution_id="test-exec", workflow_name="market_scan")
 
     assert len(snapshot) == 2
-    assert "Snapshot source breakdown:" in caplog.text
+    assert '"event": "snapshot_source_breakdown"' in caplog.text
     assert "historical_fallback=1" in caplog.text
     assert "security_master_fallback=1" in caplog.text

@@ -20,6 +20,7 @@ This document tracks major architectural decisions and their implementation stat
 - All CLI, workflows, and API paths now use coordinator factory
 - Added 8 comprehensive end-to-end parity tests in `test_coordinator_parity.py`
 - Validated identical behavior: live → persisted snapshot → security master fallback
+- Added scoring explainability with score breakdown models, API response types, CLI formatting, and tests
 
 ### Earlier Completed
 
@@ -31,7 +32,6 @@ This document tracks major architectural decisions and their implementation stat
 
 ## Active Work
 
-- Scoring explainability: extend detector to return score breakdowns
 - Enhanced observability: structured logging with execution IDs
 
 ## Active Follow-ups

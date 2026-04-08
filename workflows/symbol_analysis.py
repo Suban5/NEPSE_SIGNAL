@@ -18,6 +18,8 @@ from .common import (
     build_technical_frame,
     detect_market_patterns,
     fetch_market_snapshot,
+    log_workflow_event,
+    new_execution_id,
 )
 from .context import SymbolAnalysisContext, validate_symbol
 
@@ -40,6 +42,15 @@ def run_symbol_analysis_workflow(
     end_date: Optional[pd.Timestamp | str],
 ) -> SymbolAnalysisContext:
     """Execute a single-symbol analysis workflow and return the produced context."""
+    execution_id = new_execution_id("symbol-analysis")
+    log_workflow_event(
+        workflow="symbol_analysis",
+        execution_id=execution_id,
+        event="workflow_started",
+        symbol=str(symbol or ""),
+        start_date=str(start_date or ""),
+        end_date=str(end_date or ""),
+    )
     normalized_symbol = validate_symbol(symbol)
     parsed_start = pd.to_datetime(start_date).date() if start_date is not None else None
     parsed_end = pd.to_datetime(end_date).date() if end_date is not None else None
@@ -52,7 +63,11 @@ def run_symbol_analysis_workflow(
     if history.empty:
         raise RuntimeError(f"No historical OHLCV found for {normalized_symbol}")
 
-    snapshot = fetch_market_snapshot(dependencies.coordinator)
+    snapshot = fetch_market_snapshot(
+        dependencies.coordinator,
+        execution_id=execution_id,
+        workflow_name="symbol_analysis",
+    )
     fundamentals_map = build_fundamentals_map(dependencies.coordinator, [normalized_symbol])
     feature_df = dependencies.detector.build_feature_table(
         snapshot,
@@ -69,6 +84,14 @@ def run_symbol_analysis_workflow(
 
     signal_df = build_historical_signal_frame(normalized_symbol, technical_df, bluechip_score, dependencies.detect_patterns_fn, dependencies.build_trade_signal_fn)
     backtest: BacktestResult = run_backtest(signal_df, signal_column="signal")
+    log_workflow_event(
+        workflow="symbol_analysis",
+        execution_id=execution_id,
+        event="workflow_completed",
+        symbol=normalized_symbol,
+        history_rows=int(len(history)),
+        signal=str(signal.signal),
+    )
 
     return SymbolAnalysisContext(
         symbol=normalized_symbol,
@@ -79,4 +102,5 @@ def run_symbol_analysis_workflow(
         technical_df=technical_df,
         signal=signal,
         backtest=backtest,
+        execution_id=execution_id,
     )

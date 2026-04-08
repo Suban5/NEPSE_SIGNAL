@@ -6,6 +6,7 @@ from datetime import date, datetime
 from pathlib import Path
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
+from uuid import uuid4
 
 import json
 import logging
@@ -30,6 +31,37 @@ logger = logging.getLogger(__name__)
 
 
 _ranking_cache: TTLCache | None = None
+
+
+def new_execution_id(workflow_name: str) -> str:
+    """Generate a short execution identifier for workflow correlation."""
+    normalized = workflow_name.strip().lower().replace(" ", "-") or "workflow"
+    return f"{normalized}-{uuid4().hex[:10]}"
+
+
+def log_workflow_event(
+    workflow: str,
+    execution_id: str,
+    event: str,
+    level: int = logging.INFO,
+    **fields: Any,
+) -> None:
+    """Emit structured workflow log events with execution correlation.
+
+    Args:
+        workflow: Workflow name (scan, backtest, symbol-analysis).
+        execution_id: Unique execution identifier.
+        event: Event name for this log line.
+        level: Logging level.
+        **fields: Structured event fields.
+    """
+    payload = {
+        "workflow": workflow,
+        "execution_id": execution_id,
+        "event": event,
+        **fields,
+    }
+    logger.log(level, "%s", json.dumps(payload, sort_keys=True, default=str))
 
 
 def _get_ranking_cache() -> TTLCache:
@@ -172,21 +204,42 @@ def write_benchmark_snapshot(output_dir: Path, file_name: str, payload: Dict[str
 
 
 
-def fetch_market_snapshot(coordinator: Any, force_refresh: bool = False) -> pd.DataFrame:
+def fetch_market_snapshot(
+    coordinator: Any,
+    force_refresh: bool = False,
+    execution_id: str = "",
+    workflow_name: str = "workflow",
+) -> pd.DataFrame:
     """Fetch live snapshot via coordinator.
     
     Args:
         coordinator: Data fetch coordinator instance.
         force_refresh: If True, bypass cache and fetch from API.
     """
+    log_workflow_event(
+        workflow=workflow_name,
+        execution_id=execution_id,
+        event="fetch_market_snapshot_started",
+        force_refresh=bool(force_refresh),
+    )
     snapshot = coordinator.get_market_snapshot(force_refresh=force_refresh)
 
     validate_snapshot(snapshot)
-    log_snapshot_source_summary(snapshot)
+    log_workflow_event(
+        workflow=workflow_name,
+        execution_id=execution_id,
+        event="fetch_market_snapshot_completed",
+        row_count=int(len(snapshot)),
+    )
+    log_snapshot_source_summary(snapshot, execution_id=execution_id, workflow_name=workflow_name)
     return snapshot
 
 
-def log_snapshot_source_summary(snapshot: pd.DataFrame) -> None:
+def log_snapshot_source_summary(
+    snapshot: pd.DataFrame,
+    execution_id: str = "",
+    workflow_name: str = "workflow",
+) -> None:
     """Log row count breakdown by snapshot data source when available."""
     if "data_source" not in snapshot.columns:
         return
@@ -196,10 +249,21 @@ def log_snapshot_source_summary(snapshot: pd.DataFrame) -> None:
         return
 
     breakdown = ", ".join([f"{source}={int(count)}" for source, count in source_counts.items()])
-    logger.info("Snapshot source breakdown: %s", breakdown)
+    log_workflow_event(
+        workflow=workflow_name,
+        execution_id=execution_id,
+        event="snapshot_source_breakdown",
+        breakdown=breakdown,
+    )
 
 
-def fetch_historical_universe(coordinator: Any, lookback_years: int = 5, force_refresh: bool = False) -> Dict[str, pd.DataFrame]:
+def fetch_historical_universe(
+    coordinator: Any,
+    lookback_years: int = 5,
+    force_refresh: bool = False,
+    execution_id: str = "",
+    workflow_name: str = "workflow",
+) -> Dict[str, pd.DataFrame]:
     """Fetch and validate the historical market universe.
     
     Args:
@@ -207,11 +271,24 @@ def fetch_historical_universe(coordinator: Any, lookback_years: int = 5, force_r
         lookback_years: Number of years of history to retrieve.
         force_refresh: If True, bypass cache and fetch from API.
     """
+    log_workflow_event(
+        workflow=workflow_name,
+        execution_id=execution_id,
+        event="fetch_historical_universe_started",
+        lookback_years=int(lookback_years),
+        force_refresh=bool(force_refresh),
+    )
     historical_universe = coordinator.get_universe_with_history(
         lookback_years=lookback_years,
         force_refresh=force_refresh,
     )
     validate_historical_universe(historical_universe)
+    log_workflow_event(
+        workflow=workflow_name,
+        execution_id=execution_id,
+        event="fetch_historical_universe_completed",
+        symbol_count=int(len(historical_universe)),
+    )
     return historical_universe
 def build_signal_row(
     symbol: str,
@@ -247,12 +324,21 @@ def save_outputs(
     views["high_risk_weak"].to_csv(output_dir / "high_risk_weak.csv", index=False)
 
 
-def log_ranked_summary(views: Dict[str, pd.DataFrame]) -> None:
+def log_ranked_summary(
+    views: Dict[str, pd.DataFrame],
+    execution_id: str = "",
+    workflow_name: str = "workflow",
+) -> None:
     """Log concise ranking summary."""
-    logger.info("Top Blue-Chip Stocks: %d", len(views["top_bluechips"]))
-    logger.info("Best Buy Signals: %d", len(views["best_buy_signals"]))
-    logger.info("Strong Momentum Stocks: %d", len(views["strong_momentum"]))
-    logger.info("High Risk / Weak Stocks: %d", len(views["high_risk_weak"]))
+    log_workflow_event(
+        workflow=workflow_name,
+        execution_id=execution_id,
+        event="ranked_summary",
+        top_bluechips=int(len(views["top_bluechips"])),
+        best_buy_signals=int(len(views["best_buy_signals"])),
+        strong_momentum=int(len(views["strong_momentum"])),
+        high_risk_weak=int(len(views["high_risk_weak"])),
+    )
 
 
 def build_historical_signal_frame(
