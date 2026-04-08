@@ -241,18 +241,14 @@ def test_run_raises_on_no_command_provided() -> None:
 # --- Test command handlers with mocked dependencies ---
 def test_scan_market_command_success(monkeypatch, tmp_path) -> None:
     """scan_market should complete workflow and save outputs."""
-    fetcher_mock = MagicMock()
-    fetcher_mock.fetch_daily_market_snapshot.return_value = build_mock_snapshot()
-    fetcher_mock.fetch_universe_with_history.return_value = {
+    # Mock coordinator to return test data
+    coordinator_mock = MagicMock()
+    coordinator_mock.get_market_snapshot.return_value = build_mock_snapshot()
+    coordinator_mock.get_universe_with_history.return_value = {
         "NABIL": build_mock_technical_df(),
         "SCB": build_mock_technical_df(),
     }
-    fetcher_mock.fetch_company_fundamentals.return_value = {
-        "eps": 50.0,
-        "pe": 15.0,
-        "dividend_yield": 3.5,
-    }
-    fetcher_mock.normalize_fundamentals.return_value = {
+    coordinator_mock.get_historical.return_value = {
         "earnings_growth": 0.1,
         "dividend_stability": 0.9,
         "revenue_growth": 0.08,
@@ -268,8 +264,8 @@ def test_scan_market_command_success(monkeypatch, tmp_path) -> None:
         "SCB": build_mock_technical_df(),
     })
     
-    monkeypatch.setattr(commands, "NepseDataFetcher", lambda: fetcher_mock)
-    monkeypatch.setattr(commands, "BlueChipDetector", lambda: detector_mock)
+    monkeypatch.setattr(commands, "build_data_fetch_coordinator", lambda: coordinator_mock)
+    monkeypatch.setattr(commands, "BlueChipDetector", lambda config=None: detector_mock)
     monkeypatch.setattr(commands, "MarketScanner", lambda: scanner_mock)
     monkeypatch.setattr(commands, "detect_patterns", lambda _df: [])
     monkeypatch.setattr(
@@ -288,7 +284,7 @@ def test_scan_market_command_success(monkeypatch, tmp_path) -> None:
         "high_risk_weak": pd.DataFrame(),
     })
     
-    args = argparse.Namespace(command="scan-market", top_n=2, plot=False, output=str(tmp_path))
+    args = argparse.Namespace(command="scan-market", top_n=2, plot=False, output=str(tmp_path), sector_relative=False)
     commands.scan_market(args)
     
     # Verify output files created
@@ -298,13 +294,12 @@ def test_scan_market_command_success(monkeypatch, tmp_path) -> None:
 
 def test_scan_market_raises_on_empty_snapshot(monkeypatch) -> None:
     """scan_market should raise RuntimeError when snapshot is empty."""
-    fetcher_mock = MagicMock()
-    fetcher_mock.fetch_daily_market_snapshot.return_value = pd.DataFrame()
-    fetcher_mock.fetch_symbols.return_value = pd.DataFrame()
+    coordinator_mock = MagicMock()
+    coordinator_mock.get_market_snapshot.return_value = pd.DataFrame()  # Empty snapshot
     
-    monkeypatch.setattr(commands, "NepseDataFetcher", lambda: fetcher_mock)
+    monkeypatch.setattr(commands, "build_data_fetch_coordinator", lambda: coordinator_mock)
     
-    args = argparse.Namespace(command="scan-market", top_n=15, plot=False, output="output")
+    args = argparse.Namespace(command="scan-market", top_n=15, plot=False, output="output", sector_relative=False)
     
     with pytest.raises(RuntimeError, match="No market snapshot data retrieved"):
         commands.scan_market(args)
@@ -328,10 +323,10 @@ def test_scan_symbol_requires_symbol_argument() -> None:
 
 def test_health_check_validates_snapshot(monkeypatch) -> None:
     """health_check should raise RuntimeError on empty snapshot."""
-    fetcher_mock = MagicMock()
-    fetcher_mock.fetch_daily_market_snapshot.return_value = pd.DataFrame()
+    coordinator_mock = MagicMock()
+    coordinator_mock.get_market_snapshot.return_value = pd.DataFrame()  # Empty snapshot
     
-    monkeypatch.setattr(commands, "NepseDataFetcher", lambda: fetcher_mock)
+    monkeypatch.setattr(commands, "build_data_fetch_coordinator", lambda: coordinator_mock)
     
     args = argparse.Namespace(symbol=None)
     
@@ -341,11 +336,11 @@ def test_health_check_validates_snapshot(monkeypatch) -> None:
 
 def test_health_check_validates_historical_data(monkeypatch) -> None:
     """health_check should raise RuntimeError on empty historical data."""
-    fetcher_mock = MagicMock()
-    fetcher_mock.fetch_daily_market_snapshot.return_value = build_mock_snapshot()
-    fetcher_mock.fetch_historical_ohlcv.return_value = pd.DataFrame()
+    coordinator_mock = MagicMock()
+    coordinator_mock.get_market_snapshot.return_value = build_mock_snapshot()
+    coordinator_mock.get_historical.return_value = pd.DataFrame()  # Empty historical data
     
-    monkeypatch.setattr(commands, "NepseDataFetcher", lambda: fetcher_mock)
+    monkeypatch.setattr(commands, "build_data_fetch_coordinator", lambda: coordinator_mock)
     
     args = argparse.Namespace(symbol=None)
     
