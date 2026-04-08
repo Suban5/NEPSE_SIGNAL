@@ -162,3 +162,21 @@ class BlueChipRankingResponse(BaseModel):
     sector_summary: Optional[List[Dict[str, Any]]] = Field(
         default=None, description="Aggregate statistics by sector (mean, max, count)"
     )
+
+
+class AnalyticsRowsResponse(BaseModel):
+    """Generic analytics rows response with workflow traceability."""
+
+    top_n: int
+    sector_relative: bool
+    execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    rows: List[Dict[str, Any]]
+
+
+class AnalyticsBluechipRankingResponse(BaseModel):
+    """Typed analytics response for blue-chip ranking endpoint."""
+
+    top_n: int
+    sector_relative: bool
+    execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    rows: List[Dict[str, Any]]

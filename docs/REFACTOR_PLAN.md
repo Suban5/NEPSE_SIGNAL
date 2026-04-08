@@ -23,6 +23,7 @@ This document tracks major architectural decisions and their implementation stat
 - Added scoring explainability with score breakdown models, API response types, CLI formatting, and tests
 - Added structured workflow observability with execution IDs in scan/backtest/symbol flows
 - Added analytics API execution_id contract for response-level traceability
+- Added typed analytics response models for improved OpenAPI contract clarity
 
 ### Earlier Completed
 

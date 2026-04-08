@@ -81,6 +81,13 @@ Analytics response contract (shared fields):
 - execution_id (workflow correlation identifier)
 - rows
 
+Typed response models:
+- `/analytics/bluechip-ranking` -> `AnalyticsBluechipRankingResponse`
+- `/analytics/opportunities` -> `AnalyticsRowsResponse`
+- `/analytics/signal-summary` -> `AnalyticsRowsResponse`
+
+Note: `AnalyticsBluechipRankingResponse` currently enforces typed top-level metadata (`top_n`, `sector_relative`, `execution_id`) while keeping `rows` schema flexible (`List[Dict[str, Any]]`) for backward compatibility.
+
 ### Observability
 - GET /metrics -> RequestMetricsResponse
 

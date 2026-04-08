@@ -3,7 +3,7 @@
 Metadata:
 Owner: suban
 Last Reviewed: 2026-04-08
-Source of Truth: api/app.py, api/service.py, api/models.py
+Source of Truth: api/app.py, api/service.py, api/models.py, tests/test_api_app.py
 Validation Method: Code + Tests
 
 ## Start Server

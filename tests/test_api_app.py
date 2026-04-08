@@ -134,6 +134,8 @@ def test_openapi_exposes_contract_models() -> None:
     assert "GenericObjectResponse" in schemas
     assert "RequestMetricsResponse" in schemas
     assert "ApiContractResponse" in schemas
+    assert "AnalyticsRowsResponse" in schemas
+    assert "AnalyticsBluechipRankingResponse" in schemas
 
 
 def test_metrics_endpoint_returns_snapshot() -> None:
