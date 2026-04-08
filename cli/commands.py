@@ -146,6 +146,33 @@ def _build_signal_row(
     }
 
 
+def _format_score_breakdown(breakdown_dict: dict | None) -> str:
+    """Format score breakdown into human-readable string for CLI display.
+
+    Args:
+        breakdown_dict: Dictionary with component scores (market_cap, volume, stability, trend, fundamental, sector)
+
+    Returns:
+        Formatted string like: "mkt=0.85 vol=0.72 stab=0.68 trend=0.91 fund=0.45 sec=0.70"
+    """
+    if not breakdown_dict:
+        return "N/A"
+    
+    try:
+        components = {
+            "mkt": breakdown_dict.get("market_cap", 0.0),
+            "vol": breakdown_dict.get("volume", 0.0),
+            "stab": breakdown_dict.get("stability", 0.0),
+            "trend": breakdown_dict.get("trend", 0.0),
+            "fund": breakdown_dict.get("fundamental", 0.0),
+            "sec": breakdown_dict.get("sector", 0.0),
+        }
+        parts = [f"{key}={val:.2f}" for key, val in components.items()]
+        return " ".join(parts)
+    except (TypeError, ValueError, AttributeError):
+        return "N/A"
+
+
 def _save_outputs(
     output_dir: Path,
     bluechip_ranked: pd.DataFrame,
@@ -167,11 +194,21 @@ def _legacy_mode_requested(args: argparse.Namespace) -> bool:
 
 
 def _log_ranked_summary(views: Dict[str, pd.DataFrame]) -> None:
-    """Log concise ranking summary."""
+    """Log concise ranking summary with top bluechip scores and breakdowns."""
     logger.info("Top Blue-Chip Stocks: %d", len(views["top_bluechips"]))
     logger.info("Best Buy Signals: %d", len(views["best_buy_signals"]))
     logger.info("Strong Momentum Stocks: %d", len(views["strong_momentum"]))
     logger.info("High Risk / Weak Stocks: %d", len(views["high_risk_weak"]))
+    
+    # Log top-5 bluechips with score breakdowns for transparency
+    if not views["top_bluechips"].empty:
+        logger.info("--- Top 5 Blue-Chip Scores (with component breakdown) ---")
+        top_5 = views["top_bluechips"].head(5)
+        for _, row in top_5.iterrows():
+            symbol = row.get("symbol", "?")
+            score = row.get("bluechip_score", 0.0)
+            breakdown = _format_score_breakdown(row.get("score_breakdown"))
+            logger.info("  %s: %.4f | %s", symbol, score, breakdown)
 
 
 def _build_bluechip_detector(sector_relative: bool) -> BlueChipDetector:

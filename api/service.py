@@ -7,9 +7,11 @@ from pathlib import Path
 import time
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
 from nepse_client import NepseClient
 
 from api.cache import TTLCache
+from api.models import BlueChipRankingResponse, BlueChipRankingItem, ScoreBreakdown, FeatureImportance
 from analysis.indicators import add_indicators
 from bluechip.detector import BlueChipDetector, BlueChipScoringConfig
 from candlestick.patterns import detect_patterns
@@ -223,6 +225,103 @@ class NepseApiService:
             "sector_relative": payload["sector_relative"],
             "rows": payload["signal_summary"],
         }
+
+    def build_bluechip_ranking_response(
+        self, bluechip_ranked: pd.DataFrame, sector_relative: bool = False, top_n: int = 20
+    ) -> BlueChipRankingResponse:
+        """Build structured blue-chip ranking response with score breakdowns and explainability.
+
+        Args:
+            bluechip_ranked: Scored dataframe from BlueChipDetector.score_bluechips()
+            sector_relative: Whether sector-relative scoring was used
+            top_n: Target number for top selected stocks
+
+        Returns:
+            Typed BlueChipRankingResponse with score breakdown for each stock.
+        """
+        if bluechip_ranked.empty:
+            return BlueChipRankingResponse(
+                top_n=top_n,
+                sector_relative=sector_relative,
+                generated_from="api.service.build_bluechip_ranking_response",
+                feature_importance=FeatureImportance(
+                    market_cap=0.30, volume=0.20, stability=0.20, trend=0.20, fundamental=0.10
+                ),
+                ranking=[],
+                sector_summary=[],
+            )
+
+        ranking_items = []
+        for _, row in bluechip_ranked.iterrows():
+            # Extract score breakdown or build from components
+            score_breakdown_dict = row.get("score_breakdown", {})
+            if isinstance(score_breakdown_dict, dict) and score_breakdown_dict:
+                # Use provided breakdown dict if not empty
+                try:
+                    breakdown = ScoreBreakdown(**score_breakdown_dict)
+                except (TypeError, ValueError):
+                    # Fallback to component scores if dict is malformed
+                    breakdown = ScoreBreakdown(
+                        market_cap=float(row.get("market_cap_score", 0.0)),
+                        volume=float(row.get("volume_score", 0.0)),
+                        stability=float(row.get("stability_score", 0.0)),
+                        trend=float(row.get("trend_score", 0.0)),
+                        fundamental=float(row.get("fundamental_score", 0.0)),
+                        sector=float(row.get("sector_score", 0.5)),
+                    )
+            else:
+                # Fallback: compute from individual scores if breakdown not present or empty
+                breakdown = ScoreBreakdown(
+                    market_cap=float(row.get("market_cap_score", 0.0)),
+                    volume=float(row.get("volume_score", 0.0)),
+                    stability=float(row.get("stability_score", 0.0)),
+                    trend=float(row.get("trend_score", 0.0)),
+                    fundamental=float(row.get("fundamental_score", 0.0)),
+                    sector=float(row.get("sector_score", 0.5)),
+                )
+
+            item = BlueChipRankingItem(
+                rank=int(row.get("rank", 0)),
+                symbol=str(row.get("symbol", "")),
+                sector=str(row.get("sector", "Unknown")),
+                bluechip_score=float(row.get("bluechip_score", 0.0)),
+                base_bluechip_score=float(row.get("base_bluechip_score", 0.0)),
+                score_breakdown=breakdown,
+                market_cap=float(row.get("market_cap", 0.0)),
+                avg_volume=float(row.get("avg_volume", 0.0)),
+                volatility=float(row.get("volatility", 0.0)),
+                cagr=float(row.get("cagr", 0.0)),
+                fundamental_strength=float(row.get("fundamental_strength", 0.0)),
+            )
+            ranking_items.append(item)
+
+        # Build feature importance from detector config if possible
+        detector = BlueChipDetector(config=BlueChipScoringConfig(sector_relative=sector_relative))
+        importance_dict = detector.get_feature_importance()
+        feature_importance = FeatureImportance(**importance_dict)
+
+        # Optional: compute sector summary
+        sector_summary = []
+        if "sector" in bluechip_ranked.columns and not bluechip_ranked.empty:
+            grouped = bluechip_ranked.groupby("sector", dropna=False)["bluechip_score"].agg(["mean", "max", "count"])
+            for sector, row_data in grouped.iterrows():
+                sector_summary.append(
+                    {
+                        "sector": str(sector),
+                        "mean_score": float(row_data["mean"]),
+                        "max_score": float(row_data["max"]),
+                        "count": int(row_data["count"]),
+                    }
+                )
+
+        return BlueChipRankingResponse(
+            top_n=top_n,
+            sector_relative=sector_relative,
+            generated_from="api.service.build_bluechip_ranking_response",
+            feature_importance=feature_importance,
+            ranking=ranking_items,
+            sector_summary=sector_summary if sector_summary else None,
+        )
 
     def _cache_key(self, method_name: str, **kwargs: Any) -> str:
         """Build stable cache key for a method invocation."""

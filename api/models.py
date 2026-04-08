@@ -98,3 +98,67 @@ class RequestMetricsResponse(BaseModel):
     status_counts: Dict[str, int]
     endpoint_counts: Dict[str, int]
     cache_stats: Dict[str, Dict[str, int]]
+
+
+class ScoreBreakdown(BaseModel):
+    """Detailed breakdown of blue-chip score components with computed ratios."""
+
+    market_cap: float = Field(ge=0.0, le=1.0, description="Market capitalization normalized score")
+    volume: float = Field(ge=0.0, le=1.0, description="Liquidity (volume + turnover) normalized score")
+    stability: float = Field(ge=0.0, le=1.0, description="Inverse volatility: 1 - normalized volatility")
+    trend: float = Field(ge=0.0, le=1.0, description="Trend (CAGR) normalized score")
+    fundamental: float = Field(ge=0.0, le=1.0, description="Fundamental strength (earnings, dividend, revenue) normalized")
+    sector: float = Field(ge=0.0, le=1.0, description="Sector relative ranking score when sector_relative is enabled")
+
+    def explain(self) -> str:
+        """Return human-readable explanation of score components."""
+        components = [
+            f"market_cap={self.market_cap:.3f}",
+            f"volume={self.volume:.3f}",
+            f"stability={self.stability:.3f}",
+            f"trend={self.trend:.3f}",
+            f"fundamental={self.fundamental:.3f}",
+            f"sector={self.sector:.3f}",
+        ]
+        return ", ".join(components)
+
+
+class BlueChipRankingItem(BaseModel):
+    """Single stock entry in blue-chip ranking with score components and breakdown."""
+
+    rank: int = Field(ge=1, description="Rank in blue-chip ranking (1-indexed)")
+    symbol: str = Field(min_length=1, description="Stock symbol")
+    sector: str = Field(description="Industry sector")
+    bluechip_score: float = Field(ge=0.0, le=1.0, description="Final weighted blue-chip score")
+    base_bluechip_score: float = Field(ge=0.0, le=1.0, description="Base score before sector adjustment")
+    score_breakdown: ScoreBreakdown = Field(description="Component-level score breakdown for transparency")
+    market_cap: float = Field(description="Market capitalization value")
+    avg_volume: float = Field(description="Average trading volume")
+    volatility: float = Field(description="Annualized volatility")
+    cagr: float = Field(description="Compound annual growth rate")
+    fundamental_strength: float = Field(description="Aggregated fundamental metrics")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class FeatureImportance(BaseModel):
+    """Feature importance weights used in blue-chip scoring."""
+
+    market_cap: float = Field(ge=0.0, le=1.0)
+    volume: float = Field(ge=0.0, le=1.0)
+    stability: float = Field(ge=0.0, le=1.0)
+    trend: float = Field(ge=0.0, le=1.0)
+    fundamental: float = Field(ge=0.0, le=1.0)
+
+
+class BlueChipRankingResponse(BaseModel):
+    """Structured blue-chip ranking response with explainability."""
+
+    top_n: int
+    sector_relative: bool
+    generated_from: str = Field(description="Workflow or service that generated this ranking")
+    feature_importance: FeatureImportance = Field(description="Weights applied to score components")
+    ranking: List[BlueChipRankingItem] = Field(description="Ranked stocks with score breakdowns")
+    sector_summary: Optional[List[Dict[str, Any]]] = Field(
+        default=None, description="Aggregate statistics by sector (mean, max, count)"
+    )
