@@ -166,6 +166,7 @@ def test_analytics_bluechip_ranking_endpoint_returns_rows(monkeypatch) -> None:
         return {
             "top_n": top_n,
             "sector_relative": sector_relative,
+            "execution_id": "scan-abc123",
             "rows": [{"symbol": "NABIL", "bluechip_score": 0.91}],
         }
 
@@ -177,6 +178,7 @@ def test_analytics_bluechip_ranking_endpoint_returns_rows(monkeypatch) -> None:
     payload = response.json()
     assert payload["top_n"] == 5
     assert payload["sector_relative"] is True
+    assert payload["execution_id"] == "scan-abc123"
     assert payload["rows"][0]["symbol"] == "NABIL"
 
 
@@ -187,6 +189,7 @@ def test_analytics_opportunities_endpoint_returns_rows(monkeypatch) -> None:
         return {
             "top_n": top_n,
             "sector_relative": sector_relative,
+            "execution_id": "scan-def456",
             "rows": [{"symbol": "SCB", "trade_score": 0.77}],
         }
 
@@ -198,6 +201,7 @@ def test_analytics_opportunities_endpoint_returns_rows(monkeypatch) -> None:
     payload = response.json()
     assert payload["top_n"] == 10
     assert payload["sector_relative"] is False
+    assert payload["execution_id"] == "scan-def456"
     assert payload["rows"][0]["symbol"] == "SCB"
 
 
@@ -208,6 +212,7 @@ def test_analytics_signal_summary_endpoint_returns_rows(monkeypatch) -> None:
         return {
             "top_n": top_n,
             "sector_relative": sector_relative,
+            "execution_id": "scan-ghi789",
             "rows": [{"symbol": "NICA", "signal": "BUY", "confidence": 0.82}],
         }
 
@@ -219,4 +224,5 @@ def test_analytics_signal_summary_endpoint_returns_rows(monkeypatch) -> None:
     payload = response.json()
     assert payload["top_n"] == 8
     assert payload["sector_relative"] is True
+    assert payload["execution_id"] == "scan-ghi789"
     assert payload["rows"][0]["signal"] == "BUY"

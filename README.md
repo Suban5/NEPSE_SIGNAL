@@ -67,6 +67,7 @@ Workflow observability:
 
 - `scan-market`, `backtest-market`, and `analyze` emit a workflow `execution_id` in CLI logs
 - benchmark artifacts include the same `execution_id` for cross-run correlation
+- analytics API responses include `execution_id` for correlation with workflow logs/artifacts
 
 Snapshot fallback order:
 

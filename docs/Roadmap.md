@@ -63,6 +63,7 @@ Stabilization phase focused on reliability and contract consistency:
 - Locked in force-refresh and fallback semantics across all callers
 - Deprecated legacy fetcher with backward-compatible alias
 - Added structured workflow logging with execution IDs and benchmark correlation
+- Exposed analytics execution IDs in API responses for end-to-end traceability
 
 Remaining stabilization tasks:
 - Increase test coverage to at least 80 percent for service and workflow layers

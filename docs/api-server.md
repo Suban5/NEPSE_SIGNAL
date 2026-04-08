@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-06
+Last Reviewed: 2026-04-08
 Source of Truth: api/app.py, api/service.py, api/models.py
 Validation Method: Code + Tests
 
@@ -55,3 +55,13 @@ Current API routes do not expose a force-refresh query parameter. For a forced r
 - Contract negotiation: /contracts
 
 For complete endpoint signatures see [api-contracts.md](api-contracts.md).
+
+## Analytics Traceability
+
+Analytics endpoints include `execution_id` in responses:
+
+- `/analytics/bluechip-ranking`
+- `/analytics/opportunities`
+- `/analytics/signal-summary`
+
+This `execution_id` maps analytics responses to workflow benchmark artifacts and structured observability logs.

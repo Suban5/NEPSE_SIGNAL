@@ -3,7 +3,7 @@
 Metadata:
 Owner: suban
 Last Reviewed: 2026-04-08
-Source of Truth: docs/*.md, api/app.py, cli/commands.py, workflows/*.py, nepse_api/*.py
+Source of Truth: docs/*.md, api/app.py, api/service.py, cli/commands.py, workflows/*.py, nepse_api/*.py
 Validation Method: Code + Tests
 
 ## Quick Links

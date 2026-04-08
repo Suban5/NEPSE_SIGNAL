@@ -173,6 +173,7 @@ class NepseApiService:
         return {
             "top_n": top_n,
             "sector_relative": sector_relative,
+            "execution_id": context.execution_id,
             "generated_from": "workflows.market_scan.run_market_scan_workflow",
             "bluechip_ranking": context.bluechip_ranked.to_dict(orient="records"),
             "opportunities": context.signal_df.to_dict(orient="records"),
@@ -205,6 +206,7 @@ class NepseApiService:
         return {
             "top_n": payload["top_n"],
             "sector_relative": payload["sector_relative"],
+            "execution_id": payload.get("execution_id", ""),
             "rows": payload["bluechip_ranking"],
         }
 
@@ -214,6 +216,7 @@ class NepseApiService:
         return {
             "top_n": payload["top_n"],
             "sector_relative": payload["sector_relative"],
+            "execution_id": payload.get("execution_id", ""),
             "rows": payload["opportunities"],
         }
 
@@ -223,6 +226,7 @@ class NepseApiService:
         return {
             "top_n": payload["top_n"],
             "sector_relative": payload["sector_relative"],
+            "execution_id": payload.get("execution_id", ""),
             "rows": payload["signal_summary"],
         }
 

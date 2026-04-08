@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-06
+Last Reviewed: 2026-04-08
 Source of Truth: api/app.py, api/models.py, tests/test_api_app.py
 Validation Method: Code + Tests
 
@@ -74,6 +74,12 @@ Data freshness behavior for API-backed analytics routes:
 - GET /analytics/bluechip-ranking
 - GET /analytics/opportunities
 - GET /analytics/signal-summary
+
+Analytics response contract (shared fields):
+- top_n
+- sector_relative
+- execution_id (workflow correlation identifier)
+- rows
 
 ### Observability
 - GET /metrics -> RequestMetricsResponse
