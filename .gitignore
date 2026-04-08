@@ -15,3 +15,7 @@ output/charts/
 output/*_benchmark.json
 output/portfolio_backtest.json
 output/portfolio_signal_set.csv
+output/bluechip_ranked.csv
+output/high_risk_weak.csv
+output/signal_summary.csv
+output/strong_momentum.csv
