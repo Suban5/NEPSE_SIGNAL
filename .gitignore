@@ -9,3 +9,9 @@ data/
 .vscode/
 
 input/*
+
+# Generated run artifacts (benchmarks/charts/backtest outputs)
+output/charts/
+output/*_benchmark.json
+output/portfolio_backtest.json
+output/portfolio_signal_set.csv
