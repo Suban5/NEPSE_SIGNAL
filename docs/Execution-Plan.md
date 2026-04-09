@@ -22,7 +22,7 @@ This document is a planning template for future implementation work. It is inten
 |---|---|---|---|---|
 | Reliability | 2 | 0 | 0 | 2 |
 | Usability | 2 | 0 | 0 | 2 |
-| Scalability | 2 | 1 | 1 | 0 |
+| Scalability | 2 | 1 | 0 | 1 |
 | Technical Debt | 2 | 0 | 0 | 2 |
 | Observability | 2 | 0 | 0 | 2 |
 | Versioning and Contracts | 2 | 0 | 0 | 2 |
@@ -235,7 +235,7 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| S1 | Reduce duplication between `api/service.py`, `cli/commands.py`, and `workflows/*.py` | Common flow logic is reused instead of copied | Code review and tests confirm shared behavior from one path | In Progress |
+| S1 | Reduce duplication between `api/service.py`, `cli/commands.py`, and `workflows/*.py` | Common flow logic is reused instead of copied | Code review and tests confirm shared behavior from one path | Done |
 | S2 | Introduce versioned API response patterns | Backward compatibility rules are defined and visible | Contract tests cover versioned response behavior | Not Started |
 
 S1 Task List:
@@ -243,8 +243,19 @@ S1 Task List:
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
 | S1-T1 | Map duplicate logic across service, CLI, and workflow layers | `api/service.py`, `cli/commands.py`, `workflows/*.py` | Duplication map documented with reuse candidates | Done |
-| S1-T2 | Extract reusable helpers for repeated orchestration logic | `workflows/common.py`, `api/service.py`, `cli/commands.py` | Shared helper path reduces repeated code paths | In Progress |
-| S1-T3 | Verify refactor does not change public behavior | `tests/test_api_app.py`, `tests/test_cli_commands.py`, `tests/test_workflows.py` | Existing tests still pass after reuse changes | Not Started |
+| S1-T2 | Extract reusable helpers for repeated orchestration logic | `workflows/common.py`, `api/service.py`, `cli/commands.py` | Shared helper path reduces repeated code paths | Done |
+| S1-T3 | Verify refactor does not change public behavior | `tests/test_api_app.py`, `tests/test_cli_commands.py`, `tests/test_workflows.py` | Existing tests still pass after reuse changes | Done |
+
+**S1-T3 Verification Evidence:**
+- Full test suite validation: 396 tests passing (2026-04-09, commit 8400086)
+- Focused regression suite: 142 tests across API, CLI, and workflows passing
+- No behavior change detected in analytics response paths (bluechip-ranking, opportunities, signal-summary routes)
+- No behavior change detected in workflow summary logging (scan, backtest, symbol commands)
+- Refactor summary:
+  - Extracted `_analytics_rows_response()` helper consolidating 3 try/except blocks in `api/service.py`
+  - Extracted `_log_workflow_summary()` helper consolidating CLI logging in `cli/commands.py`
+  - All tests maintain identical assertions post-refactor
+- **Conclusion:** S1 duplication reduction complete with verified non-breaking refactor. Ready for UI1 contract freeze.
 
 S2 Task List:
 

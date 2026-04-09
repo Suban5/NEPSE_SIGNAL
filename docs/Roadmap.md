@@ -87,6 +87,14 @@ This document tracks feature-level progress and remaining product milestones. It
   - [x] Completed service/workflow coverage objective with measured baseline validation for critical modules.
   - [x] Enabled CI coverage enforcement via `.github/workflows/ci.yml` with a 90 percent minimum gate.
 
+### scalability / code duplication reduction (S1)
+- [x] Reduced duplication between `api/service.py`, `cli/commands.py`, and `workflows/*.py`.
+  - [x] Mapped and documented duplicate logic patterns across service analytics response, CLI workflow logging.
+  - [x] Extracted `_analytics_rows_response()` shared helper consolidating 3 try/except blocks (bluechip-ranking, opportunities, signal-summary).
+  - [x] Extracted `_log_workflow_summary()` shared helper consolidating CLI workflow summary logging (scan, backtest, symbol).
+  - [x] Validated refactor with full test suite (396 tests passing, 2026-04-09).
+  - [x] Frozen UI1 contract (endpoints and field shapes) in `docs/api-contracts.md` for stable dashboard consumption.
+
 ## In Progress
 
 ### testing

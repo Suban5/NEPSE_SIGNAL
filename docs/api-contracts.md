@@ -229,6 +229,89 @@ Example:
 }
 ```
 
+## UI1 Stable Contract - Frozen Endpoints for Dashboard Consumption
+
+**Purpose:** This section documents the minimal, stable API surface committed for UI1 (dashboard) consumption. Endpoints and field shapes listed here are frozen until UI1 is released.
+
+**Frozen Endpoints:**
+
+1. **GET /analytics/signal-summary**
+   - Purpose: Top trade signals for dashboard display
+   - Required Query Params: `top_n` (default 10), `sector_relative` (default false)
+   - Response Fields (guaranteed stable):
+     - `top_n`: integer (top N signals requested)
+     - `sector_relative`: boolean (relative ranking flag)
+     - `execution_id`: string (workflow correlation ID)
+     - `summary`: optional WorkflowSummary object
+     - `rows`: list of signals with at minimum: symbol, trade_score, confidence, signal_type
+   - Versioning: Safe for v1 and v2 (v2 adds contract metadata only)
+   - Error Contract: ApiErrorResponse with code, type, message fields
+
+2. **GET /analytics/bluechip-ranking**
+   - Purpose: Blue-chip stock rankings for dashboard display
+   - Required Query Params: `top_n` (default 10), `sector_relative` (default false)
+   - Response Fields (guaranteed stable):
+     - `top_n`: integer (top N rankings requested)
+     - `sector_relative`: boolean (relative ranking flag)
+     - `execution_id`: string (workflow correlation ID)
+     - `summary`: optional WorkflowSummary object
+     - `rows`: list of rankings with at minimum: symbol, bluechip_score, market_cap, stability
+   - Versioning: Safe for v1 and v2 (v2 adds contract metadata only)
+   - Error Contract: ApiErrorResponse with code, type, message fields
+
+3. **GET /analytics/backtest-summary**
+   - Purpose: Portfolio backtest metrics for dashboard display
+   - Required Query Params: `lookback_days` (int, >= 1), `rebalance` (enum), `sector_relative` (default false)
+   - Response Fields (guaranteed stable):
+     - `top_n`: integer (portfolio size)
+     - `lookback_days`: integer (backtest window)
+     - `rebalance`: string (rebalance frequency)
+     - `execution_id`: string (workflow correlation ID)
+     - `summary`: optional WorkflowSummary object with portfolio metrics
+     - `historical_validation`: object with symbol sufficiency counts
+     - `portfolio_metrics`: object with cagr, max_drawdown, sharpe_ratio, total_return
+   - Versioning: Safe for v1 and v2 (v2 adds contract metadata only)
+   - Error Contract: ApiErrorResponse with code, type, message fields
+
+4. **GET /health**
+   - Purpose: Service health check before UI loads
+   - Response Fields: status (e.g., "healthy")
+   - Versioning: Stable across all versions
+
+5. **GET /metrics**
+   - Purpose: Workflow execution telemetry for UI observability (optional consumption)
+   - Response Fields (guaranteed stable):
+     - `execution_trace_counts`: dict of endpoint -> trace count
+     - `last_execution_id_by_endpoint`: dict of endpoint -> latest execution_id
+   - Versioning: Safe for v1 and v2
+
+**Field Stability Guarantees:**
+
+- Core response fields (top_n, execution_id, rows, summary) are **not removed or renamed** in v1 or v2
+- `rows` arrays preserve minimum required fields (symbol, score/rank, secondary fields)
+- `execution_id` and `summary` remain optional but present on success
+- Error responses maintain ApiErrorResponse shape (code, type, message, error_id, retriable)
+
+**Breaking Changes Policy for UI1:**
+
+- Response field removal or rename: **Not permitted** until UI1 is released and upgraded
+- Additive fields (new columns in rows, new summary fields): **Permitted** without notification
+- Type changes (e.g., string -> number): **Not permitted** for existing fields
+- Response pagination: **Not introduced** during UI1 development (row counts remain pageless)
+
+**Data Freshness Behavior for UI1:**
+
+- UI requests use default fetch path: memory cache -> local datasets -> upstream API
+- No force-refresh query parameter is exposed in UI1 contract
+- Backtest summary uses provided `lookback_days` and `rebalance` params; does not auto-adjust
+
+**Future Versioning (Post-UI1):**
+
+Once UI1 ships and users are actively consuming these endpoints:
+- S2 milestone will introduce explicit versioning rules (e.g., v2 response metadata, breaking change migration path)
+- Breaking changes will require a coordinated client upgrade or fallback response version
+- Version negotiation via `X-API-Version` header (currently supported, awaiting v2 consumer adoption)
+
 ## Validation Reference
 
 - Route behavior and schema: tests/test_api_app.py
