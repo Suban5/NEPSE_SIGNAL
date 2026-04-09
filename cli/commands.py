@@ -50,6 +50,11 @@ def _emit_workflow_event(command: str, workflow_id: str, phase: str, status: str
     )
 
 
+def _log_workflow_summary(summary: Dict[str, object]) -> None:
+    """Log standardized workflow summary payload for CLI workflows."""
+    logger.info("Workflow summary | %s", json.dumps(summary, default=str))
+
+
 def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
     """Parse command line arguments.
 
@@ -258,7 +263,7 @@ def scan_market(args: argparse.Namespace) -> None:
         force_refresh=bool(getattr(args, "force_refresh", False)),
     )
     logger.info("Market scan completed | execution_id=%s | output_dir=%s", context.execution_id, context.output_dir)
-    logger.info("Workflow summary | %s", json.dumps(context.to_summary(), default=str))
+    _log_workflow_summary(context.to_summary())
 
 
 def backtest_market(args: argparse.Namespace) -> None:
@@ -284,7 +289,7 @@ def backtest_market(args: argparse.Namespace) -> None:
         force_refresh=bool(getattr(args, "force_refresh", False)),
     )
     logger.info("Market backtest completed | execution_id=%s | output_dir=%s", context.execution_id, context.output_dir)
-    logger.info("Workflow summary | %s", json.dumps(context.to_summary(), default=str))
+    _log_workflow_summary(context.to_summary())
     logger.info("Historical validation | %s", json.dumps(context.historical_validation, default=str))
     logger.info("Portfolio metrics | %s", json.dumps(context.portfolio_metrics, default=str))
 
@@ -334,7 +339,7 @@ def scan_symbol(args: argparse.Namespace) -> None:
         context.backtest.sharpe_ratio,
     )
     logger.info("Symbol analysis completed | execution_id=%s", context.execution_id)
-    logger.info("Workflow summary | %s", json.dumps(context.to_summary(), default=str))
+    _log_workflow_summary(context.to_summary())
 
 
 def health_check(args: argparse.Namespace) -> None:

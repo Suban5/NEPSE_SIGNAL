@@ -22,7 +22,7 @@ This document is a planning template for future implementation work. It is inten
 |---|---|---|---|---|
 | Reliability | 2 | 0 | 0 | 2 |
 | Usability | 2 | 0 | 0 | 2 |
-| Scalability | 2 | 2 | 0 | 0 |
+| Scalability | 2 | 1 | 1 | 0 |
 | Technical Debt | 2 | 0 | 0 | 2 |
 | Observability | 2 | 0 | 0 | 2 |
 | Versioning and Contracts | 2 | 0 | 0 | 2 |
@@ -235,15 +235,15 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| S1 | Reduce duplication between `api/service.py`, `cli/commands.py`, and `workflows/*.py` | Common flow logic is reused instead of copied | Code review and tests confirm shared behavior from one path | Not Started |
+| S1 | Reduce duplication between `api/service.py`, `cli/commands.py`, and `workflows/*.py` | Common flow logic is reused instead of copied | Code review and tests confirm shared behavior from one path | In Progress |
 | S2 | Introduce versioned API response patterns | Backward compatibility rules are defined and visible | Contract tests cover versioned response behavior | Not Started |
 
 S1 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| S1-T1 | Map duplicate logic across service, CLI, and workflow layers | `api/service.py`, `cli/commands.py`, `workflows/*.py` | Duplication map documented with reuse candidates | Not Started |
-| S1-T2 | Extract reusable helpers for repeated orchestration logic | `workflows/common.py`, `api/service.py`, `cli/commands.py` | Shared helper path reduces repeated code paths | Not Started |
+| S1-T1 | Map duplicate logic across service, CLI, and workflow layers | `api/service.py`, `cli/commands.py`, `workflows/*.py` | Duplication map documented with reuse candidates | Done |
+| S1-T2 | Extract reusable helpers for repeated orchestration logic | `workflows/common.py`, `api/service.py`, `cli/commands.py` | Shared helper path reduces repeated code paths | In Progress |
 | S1-T3 | Verify refactor does not change public behavior | `tests/test_api_app.py`, `tests/test_cli_commands.py`, `tests/test_workflows.py` | Existing tests still pass after reuse changes | Not Started |
 
 S2 Task List:
@@ -519,9 +519,9 @@ B2 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| B2-T1 | Define the summary shape for backtest outputs | `workflows/market_backtest.py`, `docs/*.md` | Summary fields are documented and reviewable | Not Started |
-| B2-T2 | Surface backtest summaries in CLI and API flows | `cli/commands.py`, `api/app.py`, `workflows/market_backtest.py` | Summary artifacts appear in user-facing outputs | Not Started |
-| B2-T3 | Add regression tests for summary generation | `tests/test_workflows.py`, `tests/test_cli_commands.py` | Tests confirm summary artifacts are produced | Not Started |
+| B2-T1 | Define the summary shape for backtest outputs | `workflows/market_backtest.py`, `docs/*.md` | Summary fields are documented and reviewable | Done |
+| B2-T2 | Surface backtest summaries in CLI and API flows | `cli/commands.py`, `api/app.py`, `workflows/market_backtest.py` | Summary artifacts appear in user-facing outputs | Done |
+| B2-T3 | Add regression tests for summary generation | `tests/test_workflows.py`, `tests/test_cli_commands.py` | Tests confirm summary artifacts are produced | Done |
 
 Assumptions:
 

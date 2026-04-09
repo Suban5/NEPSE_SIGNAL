@@ -95,7 +95,7 @@ This document tracks feature-level progress and remaining product milestones. It
 ## Remaining / Planned
 
 ### api
-- [ ] Introduce versioned API responses and explicit backward compatibility rules.
+- [ ] Expand versioned API response coverage beyond analytics routes while preserving additive compatibility.
 - [ ] Expand generated API docs checks in CI.
 
 ### analysis / ranking / backtesting

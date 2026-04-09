@@ -316,13 +316,19 @@ class NepseApiService:
             )
         )
 
-    def analytics_bluechip_ranking(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
-        """Return workflow-backed blue-chip ranking output."""
+    def _analytics_rows_response(
+        self,
+        endpoint: str,
+        rows_key: str,
+        top_n: int,
+        sector_relative: bool,
+    ) -> Dict[str, Any]:
+        """Build analytics response for row-oriented scan routes with shared logging."""
         try:
             payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
-            response = self._build_analytics_response(payload, "bluechip_ranking")
+            response = self._build_analytics_response(payload, rows_key)
             self._log_analytics_event(
-                endpoint="analytics_bluechip_ranking",
+                endpoint=endpoint,
                 stage="rank",
                 category="success",
                 symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
@@ -332,7 +338,7 @@ class NepseApiService:
             return response
         except Exception as exc:
             self._log_analytics_event(
-                endpoint="analytics_bluechip_ranking",
+                endpoint=endpoint,
                 stage=str(getattr(exc, "stage", "rank")),
                 category=str(getattr(exc, "category", "failure")),
                 symbol_scope={"top_n": int(top_n)},
@@ -340,56 +346,33 @@ class NepseApiService:
                 message=str(exc),
             )
             raise
+
+    def analytics_bluechip_ranking(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
+        """Return workflow-backed blue-chip ranking output."""
+        return self._analytics_rows_response(
+            endpoint="analytics_bluechip_ranking",
+            rows_key="bluechip_ranking",
+            top_n=top_n,
+            sector_relative=sector_relative,
+        )
 
     def analytics_opportunities(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
         """Return workflow-backed ranked opportunities output."""
-        try:
-            payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
-            response = self._build_analytics_response(payload, "opportunities")
-            self._log_analytics_event(
-                endpoint="analytics_opportunities",
-                stage="rank",
-                category="success",
-                symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
-                sector_relative=bool(response["sector_relative"]),
-                execution_id=str(response.get("execution_id", "")),
-            )
-            return response
-        except Exception as exc:
-            self._log_analytics_event(
-                endpoint="analytics_opportunities",
-                stage=str(getattr(exc, "stage", "rank")),
-                category=str(getattr(exc, "category", "failure")),
-                symbol_scope={"top_n": int(top_n)},
-                error_type=exc.__class__.__name__,
-                message=str(exc),
-            )
-            raise
+        return self._analytics_rows_response(
+            endpoint="analytics_opportunities",
+            rows_key="opportunities",
+            top_n=top_n,
+            sector_relative=sector_relative,
+        )
 
     def analytics_signal_summary(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
         """Return workflow-backed signal summary output."""
-        try:
-            payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
-            response = self._build_analytics_response(payload, "signal_summary")
-            self._log_analytics_event(
-                endpoint="analytics_signal_summary",
-                stage="rank",
-                category="success",
-                symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
-                sector_relative=bool(response["sector_relative"]),
-                execution_id=str(response.get("execution_id", "")),
-            )
-            return response
-        except Exception as exc:
-            self._log_analytics_event(
-                endpoint="analytics_signal_summary",
-                stage=str(getattr(exc, "stage", "rank")),
-                category=str(getattr(exc, "category", "failure")),
-                symbol_scope={"top_n": int(top_n)},
-                error_type=exc.__class__.__name__,
-                message=str(exc),
-            )
-            raise
+        return self._analytics_rows_response(
+            endpoint="analytics_signal_summary",
+            rows_key="signal_summary",
+            top_n=top_n,
+            sector_relative=sector_relative,
+        )
 
     def analytics_backtest_summary(
         self,

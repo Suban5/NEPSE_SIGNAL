@@ -71,7 +71,7 @@ This document tracks technical refactoring status and architectural decisions.
 ## Remaining / Planned
 
 ### api
-- [ ] Introduce versioned API response handling and explicit backward-compatibility rules.
+- [ ] Expand versioned API response handling beyond analytics routes while preserving backward-compatible contracts.
 
 ### workflows
 - [ ] Continue incremental orchestration cleanup after D1 completion as new duplication hotspots are identified.
