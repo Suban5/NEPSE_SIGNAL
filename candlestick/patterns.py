@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List
 
 import pandas as pd
@@ -23,7 +23,7 @@ class PatternResult:
 def detect_patterns(df: pd.DataFrame) -> List[PatternResult]:
     """Detect latest candlestick patterns and map to structured results."""
     detected = detect_latest_patterns(df)
-    timestamp = pd.to_datetime(df.iloc[-1]["date"]).to_pydatetime() if not df.empty else datetime.utcnow()
+    timestamp = pd.to_datetime(df.iloc[-1]["date"]).to_pydatetime() if not df.empty else datetime.now(UTC)
     results: List[PatternResult] = []
     for pattern_name, is_detected in detected.items():
         if is_detected:
