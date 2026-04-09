@@ -63,6 +63,17 @@ This document tracks technical refactoring status and architectural decisions.
   - [x] Added regression tests for API and service-layer backtest summary contract and workflow historical-validation metadata.
   - [x] Added workflow failure-path regressions covering missing history, sparse buy sets, malformed history rows, retriable upstream failures, and artifact stability after workflow exceptions.
 
+### ui / streamlit dashboard
+- [x] Added Streamlit app shell with read-only panel layout in `ui/app.py`.
+- [x] Added centralized UI API client with timeout/retry/version-header diagnostics in `ui/api_client.py`.
+- [x] Added API-backed UI components for analytics and observability panels under `ui/components/`.
+- [x] Added API Explorer component covering non-core endpoint groups under `ui/components/explorer.py`.
+- [x] Added shared UI error/empty/timeout state helpers in `ui/utils/error_handling.py`.
+- [x] Added UI-focused unit/smoke/contract drift tests under `tests/ui/`.
+- [x] Added CI steps for UI compile checks and UI contract drift checks in `.github/workflows/ci.yml`.
+- [x] Added UI container packaging file `Dockerfile.ui`.
+- [ ] Local Docker build validation remains environment-blocked until Docker daemon is available.
+
 ### scalability / duplication reduction (S1)
 - [x] Consolidated analytics response assembly across 3 routes (bluechip-ranking, opportunities, signal-summary) into shared `_analytics_rows_response()` helper in `api/service.py`.
 - [x] Consolidated workflow summary CLI logging across 3 commands (scan, backtest, symbol) into shared `_log_workflow_summary()` helper in `cli/commands.py`.
@@ -84,6 +95,7 @@ This document tracks technical refactoring status and architectural decisions.
 - [ ] Expand generated API docs checks in CI.
 - [ ] Tighten documentation governance automation.
 - [ ] Periodically validate feature guides against runtime signatures.
+- [ ] Re-validate UI Docker build locally after Docker daemon is available.
 
 ## Reference Implementation Details
 

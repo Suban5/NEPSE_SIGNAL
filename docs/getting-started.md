@@ -2,8 +2,8 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-06
-Source of Truth: .env.example, config/settings.py, cli/commands.py
+Last Reviewed: 2026-04-09
+Source of Truth: .env.example, config/settings.py, cli/commands.py, api/app.py, ui/app.py, ui/api_client.py
 Validation Method: Code + Tests
 
 ## Prerequisites
@@ -62,6 +62,43 @@ Fetched snapshot and historical data are persisted under data/datasets for reuse
 ```bash
 python main.py run-api --host 0.0.0.0 --port 8000 --reload
 ```
+
+## Run Streamlit Dashboard
+
+Start the API first, then run:
+
+```bash
+streamlit run ui/app.py
+```
+
+Optional UI env vars:
+
+```bash
+export NEPSE_UI_API_BASE_URL=http://localhost:8000
+export NEPSE_UI_DEFAULT_API_VERSION=v1
+export NEPSE_UI_TIMEOUT_SECONDS=10
+export NEPSE_UI_MAX_ATTEMPTS=3
+export NEPSE_UI_BACKOFF_SECONDS=0.5
+```
+
+UI runtime behavior:
+
+- read-only dashboard only
+- API-driven data access only
+- no scoring/ranking/signal/backtest computation in UI
+- client-side sorting/filtering only
+
+For detailed UI operations, see [streamlit-dashboard.md](streamlit-dashboard.md).
+
+## Optional: Build UI Container
+
+`Dockerfile.ui` is available for packaging.
+
+```bash
+docker build -f Dockerfile.ui -t nepsesignal-ui:test .
+```
+
+This step requires a running Docker daemon.
 
 ## Verify Installation
 

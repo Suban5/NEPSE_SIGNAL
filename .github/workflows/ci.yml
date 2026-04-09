@@ -24,9 +24,21 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov
 
+      - name: UI module compile checks
+        run: |
+          python -m py_compile ui/app.py ui/api_client.py ui/components/*.py ui/utils/*.py
+
+      - name: UI contract drift check
+        run: |
+          pytest -q tests/ui/test_ui_contract_drift.py
+
       - name: Run tests with coverage gate
         run: |
           pytest tests/ \
             --cov=. \
             --cov-report=term-missing \
             --cov-fail-under=90
+
+      - name: Build UI Docker image
+        run: |
+          docker build -f Dockerfile.ui -t nepsesignal-ui:test .

@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-08
+Last Reviewed: 2026-04-09
 Source of Truth: api/app.py, api/service.py, api/models.py, tests/test_api_app.py
 Validation Method: Code + Tests
 
@@ -62,6 +62,25 @@ Current API routes do not expose a force-refresh query parameter. For a forced r
 - Contract negotiation: /contracts
 
 For complete endpoint signatures see [api-contracts.md](api-contracts.md).
+
+## Streamlit Dashboard Integration
+
+The Streamlit UI consumes these API groups:
+
+- core analytics panels: `/analytics/signal-summary`, `/analytics/bluechip-ranking`, `/analytics/opportunities`, `/analytics/backtest-summary`
+- diagnostics and observability: `/health`, `/metrics`, `/contracts`
+- explorer mode: non-core groups (`/market/*`, `/companies*`, `/trading/*`, `/news/*`, `/other/*`, `/mappings/*`)
+
+Recommended local run order:
+
+1. Start API server
+2. Start Streamlit UI (`streamlit run ui/app.py`)
+
+The UI sends `X-API-Version` and surfaces response headers for diagnostics:
+
+- `X-Request-Id`
+- `X-API-Contract-Version`
+- `X-API-Supported-Versions`
 
 ## Analytics Traceability
 

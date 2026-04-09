@@ -3,7 +3,7 @@
 Metadata:
 Owner: suban
 Last Reviewed: 2026-04-09
-Source of Truth: main.py, cli/commands.py, config/settings.py, workflows/*.py, api/app.py, nepse_api/*.py
+Source of Truth: main.py, cli/commands.py, config/settings.py, workflows/*.py, api/app.py, nepse_api/*.py, ui/app.py, ui/api_client.py
 Validation Method: Code + Tests + E2E Parity Tests
 
 NepseSignal is a Python application for NEPSE market analysis with CLI workflows and a FastAPI service.
@@ -17,6 +17,7 @@ NepseSignal is a Python application for NEPSE market analysis with CLI workflows
 - Ranks opportunities and exports CSV outputs
 - Runs single-symbol and portfolio backtests with metrics
 - Exposes HTTP API endpoints for market, company, trading, news, mappings, and analytics
+- Provides a read-only Streamlit dashboard that consumes API responses only
 
 Central architecture:
 
@@ -35,6 +36,7 @@ Central architecture:
 - [API Contracts](docs/api-contracts.md)
 - [Workflow Reference](docs/workflows.md)
 - [Configuration Reference](docs/configuration.md)
+- [Streamlit Dashboard Guide](docs/streamlit-dashboard.md)
 - [Blue-Chip Scoring](docs/bluechip-scoring.md)
 - [Candlestick Guide](docs/CandelStick.md)
 - [Troubleshooting](docs/troubleshooting.md)
@@ -46,6 +48,30 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+```
+
+## Quick Start
+
+Run these commands in separate terminals after setup:
+
+Terminal 1 (activate environment):
+
+```bash
+source .venv/bin/activate
+```
+
+Terminal 2 (start API):
+
+```bash
+source .venv/bin/activate
+python main.py run-api --host 0.0.0.0 --port 8000 --reload
+```
+
+Terminal 3 (start Streamlit UI):
+
+```bash
+source .venv/bin/activate
+streamlit run ui/app.py
 ```
 
 ## CLI Commands
@@ -85,6 +111,32 @@ uvicorn api_server:app --host 0.0.0.0 --port 8000 --reload
 
 - Swagger: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+## Streamlit Dashboard
+
+Start API first:
+
+```bash
+python main.py run-api --host 0.0.0.0 --port 8000 --reload
+```
+
+Then run the UI:
+
+```bash
+streamlit run ui/app.py
+```
+
+Optional UI environment variables:
+
+```bash
+export NEPSE_UI_API_BASE_URL=http://localhost:8000
+export NEPSE_UI_DEFAULT_API_VERSION=v1
+export NEPSE_UI_TIMEOUT_SECONDS=10
+export NEPSE_UI_MAX_ATTEMPTS=3
+export NEPSE_UI_BACKOFF_SECONDS=0.5
+```
+
+Container image configuration exists in `Dockerfile.ui`. Building the image requires a running Docker daemon.
 
 ## Output Artifacts
 

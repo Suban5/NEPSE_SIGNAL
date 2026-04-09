@@ -125,6 +125,18 @@ This document tracks feature-level progress and remaining product milestones. It
   - Smoke tests for pre-deployment validation: `bash tests/ui2_smoke_tests.sh http://localhost:8000`.
   - Zero backend logic duplication; display-only architecture.
 
+- [x] **Streamlit UI Execution (2026-04-09):** Implemented read-only dashboard codebase aligned to UI1/UI2 contracts.
+  - [x] C1: Streamlit shell and tab layout (`ui/app.py`).
+  - [x] C2: Centralized API client with timeout/retry/header diagnostics (`ui/api_client.py`).
+  - [x] C3: API-backed panel components (signals, rankings, opportunities, backtest, metrics).
+  - [x] C4: Client-side contract enforcement for query constraints.
+  - [x] C5: Header-based API version negotiation and `/contracts` diagnostics.
+  - [x] C6: Execution-ID correlation with `/metrics` trace metadata.
+  - [x] C7: Standardized loading/empty/error/timeout states.
+  - [x] C8: API Explorer coverage for non-core endpoint groups.
+  - [x] C9: UI unit/smoke/contract drift tests under `tests/ui/`.
+  - [ ] C10: Local Docker build validation blocked until Docker daemon is available.
+
 ## In Progress
 
 ### testing
@@ -144,6 +156,7 @@ This document tracks feature-level progress and remaining product milestones. It
 ### product
 - [ ] Support richer visualization and historical comparison views.
 - [ ] Improve release and versioning discipline for long-term maintainability.
+- [ ] Re-run local UI container build once Docker daemon is available and promote C10 to complete.
 
 ## Strategy Notes
 

@@ -12,6 +12,7 @@ Validation Method: Code + Tests
 - [Getting Started](getting-started.md) — setup and first commands
 - [CLI Reference](cli.md) — all command-line options
 - [Configuration Reference](configuration.md) — environment variables and settings
+- [Streamlit Dashboard Guide](streamlit-dashboard.md) — run and validate the read-only UI
 
 **Architecture & Design:**
 - [Architecture Guide](architecture.md) — system components and data flows
@@ -31,6 +32,8 @@ Recent updates:
 - O2 observability now documents execution-ID traceability in analytics logs and `/metrics` snapshots
 - B1 backtesting now includes deterministic fixture validation and sparse-history edge-case coverage in engine tests
 - S2 versioning now extends additive `v2` contract metadata to non-analytics typed endpoints (`/health`, `/metrics`) with test-backed fallback behavior
+- Streamlit UI implementation now includes C1-C9 completion with API-backed panels, observability correlation, API explorer coverage, and UI smoke/contract tests
+- C10 CI and Docker packaging steps are implemented; local image build remains environment-dependent on Docker daemon availability
 
 **Operations:**
 - [API Server Guide](api-server.md) — deployment and HTTP usage
