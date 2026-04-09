@@ -74,6 +74,7 @@ Data freshness behavior for API-backed analytics routes:
 - GET /analytics/bluechip-ranking
 - GET /analytics/opportunities
 - GET /analytics/signal-summary
+- GET /analytics/backtest-summary
 
 Analytics response contract (shared fields):
 - top_n
@@ -86,11 +87,23 @@ Typed response models:
 - `/analytics/bluechip-ranking` -> `AnalyticsBluechipRankingResponse`
 - `/analytics/opportunities` -> `AnalyticsOpportunitiesResponse`
 - `/analytics/signal-summary` -> `AnalyticsSignalSummaryResponse`
+- `/analytics/backtest-summary` -> `AnalyticsBacktestSummaryResponse`
+
+Backtest analytics response contract:
+- top_n
+- lookback_days
+- rebalance
+- sector_relative
+- execution_id
+- summary (`WorkflowSummary`)
+- historical_validation (`BacktestHistoricalValidation`)
+- portfolio_metrics (`BacktestPortfolioMetrics`)
 
 Notes:
 - `AnalyticsBluechipRankingResponse` enforces typed top-level metadata (`top_n`, `sector_relative`, `execution_id`) while keeping `rows` schema flexible (`List[Dict[str, Any]]`) for backward compatibility.
 - `AnalyticsOpportunitiesResponse`, `AnalyticsSignalSummaryResponse`, and the shared `AnalyticsRowsResponse` include an optional `summary` field that mirrors the workflow summary contract and keep typed row schemas with `extra=allow` to preserve compatibility with additive fields.
 - `WorkflowSummary` captures the standardized execution summary shared across CLI logs, workflow benchmark payloads, and API analytics responses.
+- For `market_backtest`, `WorkflowSummary` also includes portfolio metrics (`portfolio_cagr`, `portfolio_max_drawdown`, `portfolio_sharpe_ratio`, `portfolio_total_return`) and historical sufficiency counts (`historical_symbols_validated`, `historical_symbols_sufficient`, `historical_symbols_insufficient`).
 
 ### Observability
 - GET /metrics -> RequestMetricsResponse

@@ -25,6 +25,7 @@ This document tracks technical refactoring status and architectural decisions.
 - [x] Added workflow failure classification for fetch, scan, score, rank, signal, and backtest stages.
 - [x] Added shared validation helpers for `top_n`, `lookback_days`, `rebalance`, and CLI `limit` inputs.
 - [x] Added workflow regression tests for summary, failure classification, and invalid parameter handling.
+- [x] Added historical-data sufficiency validation to market backtest with benchmark-visible validation metadata.
 
 ### api
 - [x] Hardened API contracts with typed models and structured `ApiErrorResponse` payloads.
@@ -32,16 +33,19 @@ This document tracks technical refactoring status and architectural decisions.
 - [x] Exposed workflow category, stage, and workflow metadata in API error responses.
 - [x] Added OpenAPI/schema tests for analytics and error contract models.
 - [x] Consolidated analytics response assembly in `api/service.py` through a shared helper.
+- [x] Added typed analytics backtest summary endpoint exposing workflow summary, historical validation, and portfolio metrics.
 
 ### cli
 - [x] Kept CLI dispatch thin and aligned it with shared workflow dependencies.
 - [x] Preserved user-facing validation behavior while using typed workflow validation internally.
 - [x] Added CLI summary logging for scan, backtest, and symbol workflows.
 - [x] Added CLI regression tests for invalid parameter handling.
+- [x] Extended market backtest CLI logs with historical validation and portfolio metric payloads.
 
 ### analysis / ranking / backtesting
 - [x] Added scoring explainability with score breakdown models and response formatting.
 - [x] Kept ranking and backtesting aligned with workflow-driven outputs and benchmark artifacts.
+- [x] Centralized blue-chip score access and merge semantics in `bluechip/detector.py` for workflow and ranking consumers.
 
 ### testing
 - [x] Expanded workflow and service-layer regression coverage for edge cases and negative paths.
@@ -53,6 +57,7 @@ This document tracks technical refactoring status and architectural decisions.
   - [x] Raised overall project test coverage baseline to roughly 93 percent with targeted branch coverage improvements.
   - [x] Completed coverage expansion objective for service and workflow layers and validated baseline coverage across critical modules.
   - [x] Added CI coverage enforcement target in `.github/workflows/ci.yml` using `--cov-fail-under=90`.
+  - [x] Added regression tests for API and service-layer backtest summary contract and workflow historical-validation metadata.
 
 ## In Progress
 

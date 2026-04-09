@@ -108,7 +108,7 @@ def run_market_scan_workflow(
     if bluechip_ranked.empty:
         raise WorkflowRankingError("market_scan", "score", "No stocks qualified for blue-chip scoring.")
 
-    selected_symbols: List[str] = bluechip_ranked.head(normalized_top_n)["symbol"].tolist()
+    selected_symbols: List[str] = dependencies.detector.select_top_symbols(bluechip_ranked, normalized_top_n)
     signal_started = time.perf_counter()
     try:
         signal_rows = compute_symbol_signal_rows(

@@ -42,6 +42,54 @@ class MarketBacktestDependencies:
     rank_opportunities_fn: Callable[[pd.DataFrame], pd.DataFrame]
 
 
+def _build_historical_validation(
+    filtered_history: dict[str, pd.DataFrame],
+    selected_symbols: list[str],
+    lookback_days: int,
+) -> dict[str, Any]:
+    """Validate selected symbols have sufficient historical rows for backtesting."""
+    sufficient_symbols: list[str] = []
+    insufficient_symbols: list[str] = []
+    missing_symbols: list[str] = []
+    row_counts: dict[str, int] = {}
+
+    for symbol in selected_symbols:
+        history = filtered_history.get(symbol)
+        if history is None:
+            missing_symbols.append(symbol)
+            row_counts[symbol] = 0
+            continue
+
+        required_columns = {"date", "close"}
+        if not required_columns.issubset(set(history.columns)):
+            insufficient_symbols.append(symbol)
+            row_counts[symbol] = 0
+            continue
+
+        validated_history = history[["date", "close"]].copy()
+        validated_history["date"] = pd.to_datetime(validated_history["date"], errors="coerce")
+        validated_history["close"] = pd.to_numeric(validated_history["close"], errors="coerce")
+        validated_history = validated_history.dropna(subset=["date", "close"]).tail(lookback_days)
+
+        row_count = int(len(validated_history))
+        row_counts[symbol] = row_count
+        if row_count >= 2:
+            sufficient_symbols.append(symbol)
+        else:
+            insufficient_symbols.append(symbol)
+
+    return {
+        "validated_symbols": int(len(selected_symbols)),
+        "sufficient_symbols": int(len(sufficient_symbols)),
+        "insufficient_symbols": int(len(insufficient_symbols)),
+        "required_lookback_days": int(lookback_days),
+        "sufficient_history_symbols": sufficient_symbols,
+        "insufficient_history_symbols": insufficient_symbols,
+        "missing_history_symbols": missing_symbols,
+        "symbol_row_counts": row_counts,
+    }
+
+
 def run_market_backtest_workflow(
     dependencies: MarketBacktestDependencies,
     output_dir: Path,
@@ -110,7 +158,7 @@ def run_market_backtest_workflow(
     if bluechip_ranked.empty:
         raise WorkflowRankingError("market_backtest", "score", "No stocks qualified for blue-chip scoring.")
 
-    selected_symbols: List[str] = bluechip_ranked.head(normalized_top_n)["symbol"].tolist()
+    selected_symbols: List[str] = dependencies.detector.select_top_symbols(bluechip_ranked, normalized_top_n)
     signal_started = time.perf_counter()
     try:
         signal_rows = compute_symbol_signal_rows(
@@ -133,11 +181,24 @@ def run_market_backtest_workflow(
     buy_symbols = signal_df.loc[signal_df["signal"] == "BUY", "symbol"].tolist() if not signal_df.empty else []
     rank_elapsed = time.perf_counter() - rank_started
 
+    historical_validation = _build_historical_validation(
+        filtered_history=filtered_history,
+        selected_symbols=buy_symbols,
+        lookback_days=normalized_lookback_days,
+    )
+    backtested_symbols = historical_validation["sufficient_history_symbols"]
+    if buy_symbols and not backtested_symbols:
+        raise WorkflowDataError(
+            "market_backtest",
+            "backtest",
+            "No BUY symbols have sufficient historical rows for backtest window.",
+        )
+
     backtest_started = time.perf_counter()
     try:
         portfolio_result: PortfolioBacktestResult = run_portfolio_backtest(
             historical_universe=filtered_history,
-            selected_symbols=buy_symbols,
+            selected_symbols=backtested_symbols,
             lookback_days=normalized_lookback_days,
             rebalance=normalized_rebalance,
         )
@@ -148,6 +209,7 @@ def run_market_backtest_workflow(
     metrics = {
         "symbols_count": portfolio_result.symbols_count,
         "selected_buy_symbols": buy_symbols,
+        "backtested_symbols": backtested_symbols,
         "cagr": portfolio_result.cagr,
         "max_drawdown": portfolio_result.max_drawdown,
         "sharpe_ratio": portfolio_result.sharpe_ratio,
@@ -170,6 +232,9 @@ def run_market_backtest_workflow(
         bluechip_ranked=bluechip_ranked,
         signal_df=signal_df,
         selected_buy_symbols=buy_symbols,
+        backtested_symbols=backtested_symbols,
+        historical_validation=historical_validation,
+        portfolio_metrics=metrics,
     )
     write_benchmark_snapshot(
         output_dir=output_dir,
@@ -189,10 +254,12 @@ def run_market_backtest_workflow(
                 "universe_symbols": int(len(symbols)),
                 "selected_symbols": int(len(selected_symbols)),
                 "buy_symbols": int(len(buy_symbols)),
+                "backtested_symbols": int(len(backtested_symbols)),
                 "top_n": normalized_top_n,
                 "lookback_days": normalized_lookback_days,
                 "rebalance": normalized_rebalance,
             },
+            "historical_validation": historical_validation,
             "summary": context.to_summary(),
         },
     )

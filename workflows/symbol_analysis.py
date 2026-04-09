@@ -86,7 +86,7 @@ def run_symbol_analysis_workflow(
         scored = dependencies.detector.score_bluechips(feature_df)
     except Exception as exc:
         raise classify_workflow_exception("symbol_analysis", "score", exc) from exc
-    bluechip_score = float(scored["bluechip_score"].iloc[0]) if not scored.empty else 0.0
+    bluechip_score = dependencies.detector.get_symbol_score(scored, normalized_symbol, default=0.0)
 
     try:
         technical_df = dependencies.add_indicators_fn(history)

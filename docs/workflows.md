@@ -56,6 +56,14 @@ Outputs:
 Standard summary contract:
 - `MarketBacktestContext.to_summary()` returns the canonical workflow summary used by CLI logs, benchmark payloads, and API analytics responses
 - `backtest_benchmark.json` includes the same summary under a `summary` key
+- market backtest summary includes portfolio metric fields (`portfolio_cagr`, `portfolio_max_drawdown`, `portfolio_sharpe_ratio`, `portfolio_total_return`) and historical sufficiency counters
+
+Historical validation contract:
+- workflow validates BUY symbols against required lookback window before backtest execution
+- symbols with fewer than 2 valid close points in the requested window are excluded from the portfolio run
+- `MarketBacktestContext.historical_validation` stores symbol-level row counts and sufficiency lists
+- `backtest_benchmark.json` includes the same payload under `historical_validation`
+- workflow raises `WorkflowDataError` at `stage=backtest` if no BUY symbols have sufficient history
 
 Observability:
 - `MarketBacktestContext.execution_id` provides per-run correlation ID

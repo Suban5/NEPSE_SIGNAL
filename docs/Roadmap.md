@@ -55,6 +55,14 @@ This document tracks feature-level progress and remaining product milestones. It
 - [x] Preserved CLI workflow commands with shared dependency wiring.
 - [x] Kept user-facing validation behavior aligned with workflow validation.
 - [x] Logged standardized workflow summary payloads for scan, backtest, and symbol analysis.
+- [x] Logged backtest historical validation and portfolio metrics alongside standardized summaries.
+
+### analysis / ranking / backtesting
+- [x] Added backtesting validation against historical NEPSE data and exposed summary results via API and CLI.
+- [x] Enforced a single source of truth for blue-chip score access and ranking merge semantics across detector, workflows, and ranking modules.
+
+### testing
+- [x] Added regression coverage for API and workflow backtest-summary contract behavior.
 
 ### testing
 - [x] Expanded regression coverage for negative-path behavior in workflows and API routes.
@@ -69,7 +77,7 @@ This document tracks feature-level progress and remaining product milestones. It
 ## In Progress
 
 ### testing
-  - [ ] No active testing tasks currently.
+- [ ] No active testing tasks currently.
 
 ## Remaining / Planned
 
@@ -78,8 +86,7 @@ This document tracks feature-level progress and remaining product milestones. It
 - [ ] Expand generated API docs checks in CI.
 
 ### analysis / ranking / backtesting
-- [ ] Add backtesting validation against historical NEPSE data and expose summary results via API and CLI.
-- [ ] Enforce a single source of truth for scoring logic in `bluechip/detector.py` and related ranking modules.
+- [ ] Continue tightening scoring explainability docs and comparison guidance for future model tuning.
 
 ### api / cli / workflows
 - [ ] Continue normalizing any remaining output wrappers so future analytics and benchmark payloads stay aligned.

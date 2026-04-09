@@ -6,6 +6,8 @@ from typing import Dict
 
 import pandas as pd
 
+from bluechip.detector import BlueChipDetector
+
 
 def build_ranked_views(bluechip_df: pd.DataFrame, signal_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     """Build categorized ranking tables.
@@ -33,16 +35,7 @@ def build_ranked_views(bluechip_df: pd.DataFrame, signal_df: pd.DataFrame) -> Di
             "high_risk_weak": pd.DataFrame(),
         }
 
-    merged = signal_df.merge(
-        bluechip_df[["symbol", "bluechip_score", "volatility", "cagr", "rank"]],
-        on="symbol",
-        how="left",
-        suffixes=("", "_bluechip"),
-    )
-    if "bluechip_score" not in merged.columns:
-        merged["bluechip_score"] = merged.get("bluechip_score_bluechip")
-    elif "bluechip_score_bluechip" in merged.columns:
-        merged["bluechip_score"] = merged["bluechip_score"].fillna(merged["bluechip_score_bluechip"])
+    merged = BlueChipDetector.merge_bluechip_scores(signal_df, bluechip_df)
 
     top_bluechips = bluechip_df.sort_values("bluechip_score", ascending=False).head(20)
     best_buy_signals = merged[merged["signal"] == "BUY"].sort_values(

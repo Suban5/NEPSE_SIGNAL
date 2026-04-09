@@ -260,6 +260,12 @@ def test_market_backtest_workflow_writes_outputs(tmp_path: Path) -> None:
     assert "total_seconds" in benchmark_payload
     assert context.to_summary()["workflow"] == "market_backtest"
     assert context.to_summary()["buy_symbols"] == len(context.selected_buy_symbols)
+    assert "historical_validation" in benchmark_payload
+    assert benchmark_payload["historical_validation"]["validated_symbols"] == len(context.selected_buy_symbols)
+    assert context.historical_validation["sufficient_symbols"] >= 1
+    assert context.portfolio_metrics["lookback_days"] == 20
+    assert context.to_summary()["historical_symbols_validated"] == len(context.selected_buy_symbols)
+    assert "portfolio_cagr" in context.to_summary()
 
 
 def test_market_backtest_workflow_rejects_invalid_parameters(tmp_path: Path) -> None:

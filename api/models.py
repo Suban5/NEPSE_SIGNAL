@@ -117,7 +117,15 @@ class WorkflowSummary(BaseModel):
     universe_symbols: Optional[int] = None
     selected_symbols: Optional[int] = None
     buy_symbols: Optional[int] = None
+    backtested_symbols: Optional[int] = None
     signal_rows: Optional[int] = None
+    portfolio_cagr: Optional[float] = None
+    portfolio_max_drawdown: Optional[float] = None
+    portfolio_sharpe_ratio: Optional[float] = None
+    portfolio_total_return: Optional[float] = None
+    historical_symbols_validated: Optional[int] = None
+    historical_symbols_sufficient: Optional[int] = None
+    historical_symbols_insufficient: Optional[int] = None
     symbol: Optional[str] = None
     history_rows: Optional[int] = None
     bluechip_score: Optional[float] = None
@@ -253,3 +261,43 @@ class AnalyticsSignalSummaryResponse(BaseModel):
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
     summary: Optional[WorkflowSummary] = None
     rows: List[SignalSummaryRow]
+
+
+class BacktestHistoricalValidation(BaseModel):
+    """Historical data sufficiency validation details for backtest runs."""
+
+    validated_symbols: int
+    sufficient_symbols: int
+    insufficient_symbols: int
+    required_lookback_days: int
+    sufficient_history_symbols: List[str]
+    insufficient_history_symbols: List[str]
+    missing_history_symbols: List[str]
+    symbol_row_counts: Dict[str, int]
+
+
+class BacktestPortfolioMetrics(BaseModel):
+    """Portfolio-level metrics from market backtest workflow outputs."""
+
+    symbols_count: int
+    selected_buy_symbols: List[str]
+    backtested_symbols: List[str]
+    cagr: float
+    max_drawdown: float
+    sharpe_ratio: float
+    total_return: float
+    lookback_days: int
+    rebalance: str
+
+
+class AnalyticsBacktestSummaryResponse(BaseModel):
+    """Typed analytics response for backtest summary endpoint."""
+
+    top_n: int
+    lookback_days: int
+    rebalance: str
+    sector_relative: bool
+    execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    summary: WorkflowSummary
+    historical_validation: BacktestHistoricalValidation
+    portfolio_metrics: BacktestPortfolioMetrics

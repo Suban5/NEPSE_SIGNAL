@@ -17,6 +17,7 @@ import pandas as pd
 from api.cache import TTLCache
 from analysis.candlestick_patterns import detect_latest_patterns
 from analysis.indicators import add_indicators
+from bluechip.detector import BlueChipDetector
 from candlestick.patterns import detect_patterns
 from config.settings import get_settings
 from ranking.opportunity_ranker import rank_opportunities
@@ -153,7 +154,7 @@ def compute_symbol_signal_rows(
         technical_df = add_indicators_fn(history)
         pattern_map = detect_market_patterns(technical_df)
         pattern_results = detect_patterns_fn(technical_df)
-        bluechip_score = float(bluechip_ranked.loc[bluechip_ranked["symbol"] == symbol, "bluechip_score"].iloc[0])
+        bluechip_score = BlueChipDetector.get_symbol_score(bluechip_ranked, symbol, default=0.0)
         signal = build_trade_signal_fn(symbol, technical_df, pattern_results, bluechip_score)
 
         if plot and chart_dir and save_chart_fn is not None:

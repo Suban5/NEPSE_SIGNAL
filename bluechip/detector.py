@@ -55,6 +55,8 @@ class BlueChipScoringConfig:
 class BlueChipDetector:
     """Computes quantitative blue-chip scores from market data."""
 
+    SCORE_COLUMN = "bluechip_score"
+
     def __init__(
         self,
         weights: Optional[BlueChipWeights] = None,
@@ -267,6 +269,50 @@ class BlueChipDetector:
             "sector_summary": sector_summary,
         }
 
+    @classmethod
+    def get_symbol_score(cls, scored: pd.DataFrame, symbol: str, default: float = 0.0) -> float:
+        """Return canonical blue-chip score for a symbol from scored output."""
+        if scored.empty or "symbol" not in scored.columns or cls.SCORE_COLUMN not in scored.columns:
+            return float(default)
+        match = scored.loc[scored["symbol"] == symbol, cls.SCORE_COLUMN]
+        if match.empty:
+            return float(default)
+        return float(match.iloc[0])
+
+    @classmethod
+    def select_top_symbols(cls, scored: pd.DataFrame, top_n: int) -> list[str]:
+        """Return top-N symbols ordered by canonical blue-chip score."""
+        if scored.empty or "symbol" not in scored.columns or cls.SCORE_COLUMN not in scored.columns:
+            return []
+        ranked = scored.sort_values(cls.SCORE_COLUMN, ascending=False).head(int(top_n))
+        return ranked["symbol"].astype(str).tolist()
+
+    @classmethod
+    def merge_bluechip_scores(cls, signal_df: pd.DataFrame, bluechip_df: pd.DataFrame) -> pd.DataFrame:
+        """Attach canonical blue-chip score and core rank fields to signal rows."""
+        if signal_df.empty:
+            return signal_df.copy()
+        if bluechip_df.empty or "symbol" not in signal_df.columns or "symbol" not in bluechip_df.columns:
+            return signal_df.copy()
+
+        bluechip_columns = [
+            column
+            for column in ["symbol", cls.SCORE_COLUMN, "volatility", "cagr", "rank"]
+            if column in bluechip_df.columns
+        ]
+        merged = signal_df.merge(
+            bluechip_df[bluechip_columns],
+            on="symbol",
+            how="left",
+            suffixes=("", "_bluechip"),
+        )
+        bluechip_shadow_column = f"{cls.SCORE_COLUMN}_bluechip"
+        if cls.SCORE_COLUMN not in merged.columns and bluechip_shadow_column in merged.columns:
+            merged[cls.SCORE_COLUMN] = merged[bluechip_shadow_column]
+        elif bluechip_shadow_column in merged.columns:
+            merged[cls.SCORE_COLUMN] = merged[cls.SCORE_COLUMN].fillna(merged[bluechip_shadow_column])
+        return merged
+
     def score_bluechips(self, features: pd.DataFrame) -> pd.DataFrame:
         """Compute weighted blue-chip score and ranking."""
         if features.empty:
@@ -290,13 +336,13 @@ class BlueChipDetector:
 
         if self.config.sector_relative and "sector" in scored.columns:
             scored["sector_score"] = self._sector_relative_scale(scored["base_bluechip_score"], scored["sector"])
-            scored["bluechip_score"] = (
+            scored[self.SCORE_COLUMN] = (
                 (1.0 - self.config.sector_blend) * scored["base_bluechip_score"]
                 + self.config.sector_blend * scored["sector_score"]
             )
         else:
             scored["sector_score"] = 0.5
-            scored["bluechip_score"] = scored["base_bluechip_score"]
+            scored[self.SCORE_COLUMN] = scored["base_bluechip_score"]
 
         scored["score_breakdown"] = scored.apply(
             lambda row: {
@@ -309,6 +355,6 @@ class BlueChipDetector:
             },
             axis=1,
         )
-        scored = scored.sort_values("bluechip_score", ascending=False).reset_index(drop=True)
+        scored = scored.sort_values(self.SCORE_COLUMN, ascending=False).reset_index(drop=True)
         scored["rank"] = np.arange(1, len(scored) + 1)
         return scored

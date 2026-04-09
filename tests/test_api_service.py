@@ -36,7 +36,7 @@ def _build_service(coordinator: Any) -> NepseApiService:
     service_ref = cast(Any, service)
     service_ref._client = SimpleNamespace()
     service_ref._coordinator = coordinator
-    service_ref._caches = {"analytics_scan": _AnalyticsCacheStub()}
+    service_ref._caches = {"analytics_scan": _AnalyticsCacheStub(), "analytics_backtest": _AnalyticsCacheStub()}
     return service
 
 
@@ -186,6 +186,89 @@ def test_analytics_methods_share_cached_workflow_payload(monkeypatch: pytest.Mon
     assert opportunities_response["rows"][0]["trade_score"] == 0.77
     assert signal_summary_response["rows"][0]["signal"] == "BUY"
     assert signal_summary_response["summary"]["selected_symbols"] == 1
+
+
+def test_analytics_backtest_summary_returns_cached_payload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Backtest analytics should cache and return summary, validation, and portfolio metrics."""
+    service = _build_service(SimpleNamespace())
+    monkeypatch.setattr(
+        api_service_module,
+        "get_settings",
+        lambda: SimpleNamespace(data_cache_path=tmp_path, api_retry_attempts=1, api_retry_backoff_seconds=0.0),
+    )
+    monkeypatch.setattr(api_service_module, "BlueChipDetector", lambda config=None: SimpleNamespace())
+    monkeypatch.setattr(api_service_module, "MarketScanner", lambda: SimpleNamespace())
+
+    workflow_calls: list[dict[str, Any]] = []
+    fake_context = SimpleNamespace(
+        execution_id="backtest-abc123",
+        historical_validation={
+            "validated_symbols": 2,
+            "sufficient_symbols": 2,
+            "insufficient_symbols": 0,
+            "required_lookback_days": 60,
+            "sufficient_history_symbols": ["NABIL", "SCB"],
+            "insufficient_history_symbols": [],
+            "missing_history_symbols": [],
+            "symbol_row_counts": {"NABIL": 60, "SCB": 60},
+        },
+        portfolio_metrics={
+            "symbols_count": 2,
+            "selected_buy_symbols": ["NABIL", "SCB"],
+            "backtested_symbols": ["NABIL", "SCB"],
+            "cagr": 0.12,
+            "max_drawdown": -0.08,
+            "sharpe_ratio": 1.11,
+            "total_return": 0.29,
+            "lookback_days": 60,
+            "rebalance": "monthly",
+        },
+        to_summary=lambda: {
+            "workflow": "market_backtest",
+            "execution_id": "backtest-abc123",
+            "output_dir": str(tmp_path / "api" / "analytics" / "backtest_top_15_lookback_60_rebalance_monthly_sector_1"),
+            "top_n": 15,
+            "lookback_days": 60,
+            "rebalance": "monthly",
+            "snapshot_rows": 10,
+            "universe_symbols": 8,
+            "selected_symbols": 6,
+            "buy_symbols": 2,
+            "backtested_symbols": 2,
+            "signal_rows": 6,
+        },
+    )
+
+    def _fake_run_market_backtest_workflow(
+        *,
+        dependencies: Any,
+        output_dir: Any,
+        top_n: int,
+        lookback_days: int,
+        rebalance: str,
+    ) -> Any:
+        workflow_calls.append(
+            {
+                "dependencies": dependencies,
+                "output_dir": output_dir,
+                "top_n": top_n,
+                "lookback_days": lookback_days,
+                "rebalance": rebalance,
+            }
+        )
+        return fake_context
+
+    monkeypatch.setattr(api_service_module, "run_market_backtest_workflow", _fake_run_market_backtest_workflow)
+
+    first = service.analytics_backtest_summary(top_n=15, lookback_days=60, rebalance="monthly", sector_relative=True)
+    second = service.analytics_backtest_summary(top_n=15, lookback_days=60, rebalance="monthly", sector_relative=True)
+
+    assert len(workflow_calls) == 1
+    assert first["execution_id"] == "backtest-abc123"
+    assert first["summary"]["workflow"] == "market_backtest"
+    assert first["historical_validation"]["sufficient_symbols"] == 2
+    assert first["portfolio_metrics"]["cagr"] == 0.12
+    assert second == first
 
 
 def test_call_cached_reuses_cached_result(monkeypatch: pytest.MonkeyPatch) -> None:

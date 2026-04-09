@@ -96,3 +96,41 @@ def test_bluechip_detector_exposes_feature_importance_and_report() -> None:
 def test_bluechip_weights_validate_sum() -> None:
     with pytest.raises(ValueError, match="must sum to 1.0"):
         BlueChipWeights(market_cap=0.5, volume=0.2, stability=0.2, trend=0.2, fundamental=0.1)
+
+
+def test_bluechip_detector_symbol_score_and_top_selection_helpers() -> None:
+    scored = pd.DataFrame(
+        {
+            "symbol": ["AAA", "BBB", "CCC"],
+            "bluechip_score": [0.8, 0.95, 0.7],
+        }
+    )
+
+    assert BlueChipDetector.get_symbol_score(scored, "BBB") == pytest.approx(0.95)
+    assert BlueChipDetector.get_symbol_score(scored, "MISSING", default=0.25) == pytest.approx(0.25)
+    assert BlueChipDetector.select_top_symbols(scored, 2) == ["BBB", "AAA"]
+
+
+def test_bluechip_detector_merge_bluechip_scores_prefers_signal_value_with_fallback() -> None:
+    bluechip_df = pd.DataFrame(
+        {
+            "symbol": ["AAA", "BBB"],
+            "bluechip_score": [0.9, 0.6],
+            "volatility": [0.2, 0.4],
+            "cagr": [0.3, 0.1],
+            "rank": [1, 2],
+        }
+    )
+    signal_df = pd.DataFrame(
+        {
+            "symbol": ["AAA", "BBB", "CCC"],
+            "bluechip_score": [0.85, np.nan, 0.1],
+            "signal": ["BUY", "HOLD", "SELL"],
+        }
+    )
+
+    merged = BlueChipDetector.merge_bluechip_scores(signal_df, bluechip_df)
+
+    assert merged.loc[merged["symbol"] == "AAA", "bluechip_score"].iloc[0] == pytest.approx(0.85)
+    assert merged.loc[merged["symbol"] == "BBB", "bluechip_score"].iloc[0] == pytest.approx(0.6)
+    assert merged.loc[merged["symbol"] == "CCC", "bluechip_score"].iloc[0] == pytest.approx(0.1)

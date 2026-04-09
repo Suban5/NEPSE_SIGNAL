@@ -50,6 +50,25 @@ build_scoring_report provides:
 - symbol_breakdown
 - sector_summary
 
+## Single Source of Truth Contract
+
+The canonical blue-chip scoring contract now lives in `bluechip/detector.py` and is reused by workflows and ranking modules.
+
+Shared helpers:
+
+- `BlueChipDetector.SCORE_COLUMN` defines the canonical score field name.
+- `BlueChipDetector.get_symbol_score(scored, symbol, default)` provides safe symbol-level score access.
+- `BlueChipDetector.select_top_symbols(scored, top_n)` defines top-N symbol selection by canonical score.
+- `BlueChipDetector.merge_bluechip_scores(signal_df, bluechip_df)` standardizes score/rank merge behavior for ranking views.
+
+Consumers:
+
+- `workflows/common.py`
+- `workflows/market_scan.py`
+- `workflows/market_backtest.py`
+- `workflows/symbol_analysis.py`
+- `ranking/stock_ranker.py`
+
 ## Validation
 
 Key behavior tests:

@@ -18,6 +18,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from typing_extensions import Annotated
 
 from api.models import (
+    AnalyticsBacktestSummaryResponse,
     AnalyticsBluechipRankingResponse,
     AnalyticsOpportunitiesResponse,
     AnalyticsSignalSummaryResponse,
@@ -454,6 +455,24 @@ def analytics_signal_summary(
 ) -> Any:
     """Return workflow-backed signal summary."""
     return _wrap_call("analytics_signal_summary", service.analytics_signal_summary, top_n, sector_relative)
+
+
+@app.get("/analytics/backtest-summary", response_model=AnalyticsBacktestSummaryResponse, responses=ERROR_RESPONSES)
+def analytics_backtest_summary(
+    top_n: int = Query(default=20, ge=1, le=200),
+    lookback_days: int = Query(default=252, ge=1, le=2000),
+    rebalance: str = Query(default="static", pattern="^(static|weekly|monthly)$"),
+    sector_relative: bool = Query(default=False),
+) -> Any:
+    """Return workflow-backed market backtest summary and validation details."""
+    return _wrap_call(
+        "analytics_backtest_summary",
+        service.analytics_backtest_summary,
+        top_n,
+        lookback_days,
+        rebalance,
+        sector_relative,
+    )
 
 
 @app.get("/metrics", response_model=RequestMetricsResponse, responses=ERROR_RESPONSES)

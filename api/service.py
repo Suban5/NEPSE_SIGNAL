@@ -22,6 +22,7 @@ from ranking.opportunity_ranker import rank_opportunities
 from ranking.stock_ranker import build_ranked_views
 from signals.signal_engine import build_trade_signal
 from workflows.market_scan import MarketScanDependencies, run_market_scan_workflow
+from workflows.market_backtest import MarketBacktestDependencies, run_market_backtest_workflow
 
 
 class NepseApiService:
@@ -135,6 +136,7 @@ class NepseApiService:
             "security_id_key_map": TTLCache(3600.0),
             "sector_scrips": TTLCache(3600.0),
             "analytics_scan": TTLCache(120.0),
+            "analytics_backtest": TTLCache(120.0),
         }
 
     def _analytics_output_dir(self) -> Path:
@@ -235,6 +237,66 @@ class NepseApiService:
             self._analytics_payload(top_n=top_n, sector_relative=sector_relative),
             "signal_summary",
         )
+
+    def analytics_backtest_summary(
+        self,
+        top_n: int = 20,
+        lookback_days: int = 252,
+        rebalance: str = "static",
+        sector_relative: bool = False,
+    ) -> Dict[str, Any]:
+        """Return workflow-backed market backtest summary and validation payload."""
+        normalized_top_n = max(1, min(int(top_n), 200))
+        normalized_lookback_days = max(1, min(int(lookback_days), 2000))
+        normalized_rebalance = str(rebalance).strip().lower()
+        normalized_sector_relative = bool(sector_relative)
+
+        cache_key = self._cache_key(
+            "analytics_backtest",
+            top_n=normalized_top_n,
+            lookback_days=normalized_lookback_days,
+            rebalance=normalized_rebalance,
+            sector_relative=normalized_sector_relative,
+        )
+        cached_payload = self._caches["analytics_backtest"].get(cache_key)
+        if isinstance(cached_payload, dict):
+            return cached_payload
+
+        output_dir = self._analytics_output_dir() / (
+            f"backtest_top_{normalized_top_n}"
+            f"_lookback_{normalized_lookback_days}"
+            f"_rebalance_{normalized_rebalance}"
+            f"_sector_{int(normalized_sector_relative)}"
+        )
+        detector = BlueChipDetector(config=BlueChipScoringConfig(sector_relative=normalized_sector_relative))
+        context = run_market_backtest_workflow(
+            dependencies=MarketBacktestDependencies(
+                coordinator=self._coordinator,
+                scanner=MarketScanner(),
+                detector=detector,
+                add_indicators_fn=add_indicators,
+                detect_patterns_fn=detect_patterns,
+                build_trade_signal_fn=build_trade_signal,
+                rank_opportunities_fn=rank_opportunities,
+            ),
+            output_dir=output_dir,
+            top_n=normalized_top_n,
+            lookback_days=normalized_lookback_days,
+            rebalance=normalized_rebalance,
+        )
+
+        payload = {
+            "top_n": normalized_top_n,
+            "lookback_days": normalized_lookback_days,
+            "rebalance": normalized_rebalance,
+            "sector_relative": normalized_sector_relative,
+            "execution_id": context.execution_id,
+            "summary": context.to_summary(),
+            "historical_validation": context.historical_validation,
+            "portfolio_metrics": context.portfolio_metrics,
+        }
+        self._caches["analytics_backtest"].set(cache_key, payload)
+        return payload
 
     def build_bluechip_ranking_response(
         self, bluechip_ranked: pd.DataFrame, sector_relative: bool = False, top_n: int = 20

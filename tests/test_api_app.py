@@ -208,6 +208,7 @@ def test_openapi_exposes_contract_models() -> None:
     assert "AnalyticsOpportunitiesResponse" in schemas
     assert "AnalyticsSignalSummaryResponse" in schemas
     assert "AnalyticsBluechipRankingResponse" in schemas
+    assert "AnalyticsBacktestSummaryResponse" in schemas
     assert "WorkflowSummary" in schemas
 
 
@@ -338,3 +339,72 @@ def test_analytics_signal_summary_endpoint_returns_rows(monkeypatch) -> None:
     assert payload["execution_id"] == "scan-ghi789"
     assert payload["summary"]["workflow"] == "market_scan"
     assert payload["rows"][0]["signal"] == "BUY"
+
+
+def test_analytics_backtest_summary_endpoint_returns_payload(monkeypatch) -> None:
+    """Analytics backtest summary endpoint should return workflow-backed contract payload."""
+
+    def _backtest_summary(top_n: int, lookback_days: int, rebalance: str, sector_relative: bool):
+        return {
+            "top_n": top_n,
+            "lookback_days": lookback_days,
+            "rebalance": rebalance,
+            "sector_relative": sector_relative,
+            "execution_id": "backtest-xyz123",
+            "summary": {
+                "workflow": "market_backtest",
+                "execution_id": "backtest-xyz123",
+                "output_dir": "output/api/analytics/backtest_top_10_lookback_90_rebalance_weekly_sector_0",
+                "top_n": 10,
+                "lookback_days": 90,
+                "rebalance": "weekly",
+                "snapshot_rows": 20,
+                "universe_symbols": 12,
+                "selected_symbols": 10,
+                "buy_symbols": 3,
+                "backtested_symbols": 2,
+                "signal_rows": 10,
+                "portfolio_cagr": 0.11,
+                "portfolio_max_drawdown": -0.09,
+                "portfolio_sharpe_ratio": 1.01,
+                "portfolio_total_return": 0.24,
+                "historical_symbols_validated": 3,
+                "historical_symbols_sufficient": 2,
+                "historical_symbols_insufficient": 1,
+            },
+            "historical_validation": {
+                "validated_symbols": 3,
+                "sufficient_symbols": 2,
+                "insufficient_symbols": 1,
+                "required_lookback_days": 90,
+                "sufficient_history_symbols": ["NABIL", "SCB"],
+                "insufficient_history_symbols": ["NICA"],
+                "missing_history_symbols": [],
+                "symbol_row_counts": {"NABIL": 90, "SCB": 90, "NICA": 1},
+            },
+            "portfolio_metrics": {
+                "symbols_count": 2,
+                "selected_buy_symbols": ["NABIL", "SCB", "NICA"],
+                "backtested_symbols": ["NABIL", "SCB"],
+                "cagr": 0.11,
+                "max_drawdown": -0.09,
+                "sharpe_ratio": 1.01,
+                "total_return": 0.24,
+                "lookback_days": 90,
+                "rebalance": "weekly",
+            },
+        }
+
+    monkeypatch.setattr(api_app_module.service, "analytics_backtest_summary", _backtest_summary)
+
+    response = client.get(
+        "/analytics/backtest-summary",
+        params={"top_n": 10, "lookback_days": 90, "rebalance": "weekly", "sector_relative": False},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["execution_id"] == "backtest-xyz123"
+    assert payload["summary"]["workflow"] == "market_backtest"
+    assert payload["historical_validation"]["sufficient_symbols"] == 2
+    assert payload["portfolio_metrics"]["symbols_count"] == 2

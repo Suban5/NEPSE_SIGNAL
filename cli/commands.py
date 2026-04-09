@@ -285,6 +285,8 @@ def backtest_market(args: argparse.Namespace) -> None:
     )
     logger.info("Market backtest completed | execution_id=%s | output_dir=%s", context.execution_id, context.output_dir)
     logger.info("Workflow summary | %s", json.dumps(context.to_summary(), default=str))
+    logger.info("Historical validation | %s", json.dumps(context.historical_validation, default=str))
+    logger.info("Portfolio metrics | %s", json.dumps(context.portfolio_metrics, default=str))
 
 
 def scan_symbol(args: argparse.Namespace) -> None:

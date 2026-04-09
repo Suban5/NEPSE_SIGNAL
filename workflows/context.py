@@ -57,6 +57,9 @@ class MarketBacktestContext:
     bluechip_ranked: pd.DataFrame
     signal_df: pd.DataFrame
     selected_buy_symbols: List[str]
+    backtested_symbols: List[str]
+    historical_validation: Dict[str, Any]
+    portfolio_metrics: Dict[str, Any]
     execution_id: str = ""
 
     def to_summary(self) -> Dict[str, Any]:
@@ -72,7 +75,15 @@ class MarketBacktestContext:
             "universe_symbols": int(len(self.symbols)),
             "selected_symbols": int(min(self.top_n, len(self.bluechip_ranked))),
             "buy_symbols": int(len(self.selected_buy_symbols)),
+            "backtested_symbols": int(len(self.backtested_symbols)),
             "signal_rows": int(len(self.signal_df)),
+            "portfolio_cagr": float(self.portfolio_metrics.get("cagr", 0.0)),
+            "portfolio_max_drawdown": float(self.portfolio_metrics.get("max_drawdown", 0.0)),
+            "portfolio_sharpe_ratio": float(self.portfolio_metrics.get("sharpe_ratio", 0.0)),
+            "portfolio_total_return": float(self.portfolio_metrics.get("total_return", 0.0)),
+            "historical_symbols_validated": int(self.historical_validation.get("validated_symbols", 0)),
+            "historical_symbols_sufficient": int(self.historical_validation.get("sufficient_symbols", 0)),
+            "historical_symbols_insufficient": int(self.historical_validation.get("insufficient_symbols", 0)),
         }
 
 
