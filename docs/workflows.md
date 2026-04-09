@@ -28,9 +28,20 @@ Outputs:
 - MarketScanContext
 - CSV artifacts and scan_benchmark.json
 
+Ranking explainability outputs:
+- `signal_summary.csv` includes opportunity-scoring explainability fields when available:
+  - `trade_score_breakdown`
+  - `ranking_rationale`
+  - `trade_score_rank`, `confidence_rank`, `bluechip_rank`, `relative_trade_score`
+- structured ranked summary logs include a `rationale_preview` for top BUY opportunities when rationale fields are present
+
 Standard summary contract:
 - `MarketScanContext.to_summary()` returns the canonical workflow summary used by CLI logs, benchmark payloads, and API analytics responses
 - `scan_benchmark.json` includes the same summary under a `summary` key
+
+Summary field inventory for cross-surface alignment:
+- shared fields: `workflow`, `execution_id`
+- scan fields: `output_dir`, `top_n`, `plot`, `snapshot_rows`, `universe_symbols`, `selected_symbols`, `signal_rows`
 
 Observability:
 - `MarketScanContext.execution_id` provides per-run correlation ID
@@ -57,6 +68,10 @@ Standard summary contract:
 - `MarketBacktestContext.to_summary()` returns the canonical workflow summary used by CLI logs, benchmark payloads, and API analytics responses
 - `backtest_benchmark.json` includes the same summary under a `summary` key
 - market backtest summary includes portfolio metric fields (`portfolio_cagr`, `portfolio_max_drawdown`, `portfolio_sharpe_ratio`, `portfolio_total_return`) and historical sufficiency counters
+
+Summary field inventory for cross-surface alignment:
+- shared fields: `workflow`, `execution_id`
+- backtest fields: `output_dir`, `top_n`, `lookback_days`, `rebalance`, `snapshot_rows`, `universe_symbols`, `selected_symbols`, `buy_symbols`, `backtested_symbols`, `signal_rows`, `portfolio_cagr`, `portfolio_max_drawdown`, `portfolio_sharpe_ratio`, `portfolio_total_return`, `historical_symbols_validated`, `historical_symbols_sufficient`, `historical_symbols_insufficient`
 
 Historical validation contract:
 - workflow validates BUY symbols against required lookback window before backtest execution
@@ -85,6 +100,10 @@ Outputs:
 
 Standard summary contract:
 - `SymbolAnalysisContext.to_summary()` returns the canonical execution summary used by CLI output and downstream reporting
+
+Summary field inventory for cross-surface alignment:
+- shared fields: `workflow`, `execution_id`
+- symbol-analysis fields: `symbol`, `history_rows`, `bluechip_score`, `signal`, `confidence`, `backtest_cagr`, `backtest_sharpe_ratio`
 
 Observability:
 - `SymbolAnalysisContext.execution_id` provides per-run correlation ID

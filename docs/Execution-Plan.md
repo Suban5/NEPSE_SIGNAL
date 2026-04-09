@@ -21,7 +21,7 @@ This document is a planning template for future implementation work. It is inten
 | Area | Total Milestones | Not Started | In Progress | Done |
 |---|---|---|---|---|
 | Reliability | 2 | 0 | 0 | 2 |
-| Usability | 2 | 2 | 0 | 0 |
+| Usability | 2 | 0 | 0 | 2 |
 | Scalability | 2 | 2 | 0 | 0 |
 | Technical Debt | 2 | 0 | 0 | 2 |
 | Observability | 2 | 2 | 0 | 0 |
@@ -37,7 +37,8 @@ This document is a planning template for future implementation work. It is inten
 4. Versioning and Contracts (C1, C2)
 5. Observability (O1, O2)
 6. Backtesting (B1, B2)
-7. UI / Dashboard (UI1, UI2)
+7. Scalability (S1, S2)
+8. UI / Dashboard (UI1, UI2)
 
 ## Definition of Done
 
@@ -167,24 +168,24 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| U1 | Standardize API, CLI, and workflow output contracts | Similar operations return aligned fields and naming across layers | Contract checks and smoke tests confirm consistent response shapes | Not Started |
-| U2 | Improve scoring explainability in ranking outputs | Score breakdown and rationale are visible in outputs | Tests verify score breakdown fields and ranking comparison data | Not Started |
+| U1 | Standardize API, CLI, and workflow output contracts | Similar operations return aligned fields and naming across layers | Contract checks and smoke tests confirm consistent response shapes | Done |
+| U2 | Improve scoring explainability in ranking outputs | Score breakdown and rationale are visible in outputs | Tests verify score breakdown fields and ranking comparison data | Done |
 
 U1 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| U1-T1 | Inventory output fields across API, CLI, and workflows | `api/app.py`, `cli/commands.py`, `workflows/*.py` | Field inventory documented for each output surface | Not Started |
-| U1-T2 | Normalize shared response shapes and field names | `api/app.py`, `api/models.py`, `cli/commands.py` | Same concepts use consistent names across surfaces | Not Started |
-| U1-T3 | Update user-facing docs to match the standardized outputs | `docs/*.md` | Documentation examples match runtime behavior | Not Started |
+| U1-T1 | Inventory output fields across API, CLI, and workflows | `api/app.py`, `cli/commands.py`, `workflows/*.py` | Field inventory documented for each output surface | Done |
+| U1-T2 | Normalize shared response shapes and field names | `api/app.py`, `api/models.py`, `cli/commands.py` | Same concepts use consistent names across surfaces | Done |
+| U1-T3 | Update user-facing docs to match the standardized outputs | `docs/*.md` | Documentation examples match runtime behavior | Done |
 
 U2 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| U2-T1 | Define the minimum score breakdown fields to expose | `bluechip/detector.py`, `ranking/*.py`, `api/app.py` | Breakdown schema documented and reviewable | Not Started |
-| U2-T2 | Surface ranking rationale in API and CLI outputs | `api/app.py`, `cli/commands.py`, `workflows/*.py` | Outputs include readable explanation fields | Not Started |
-| U2-T3 | Add comparison-friendly output fields for stock ranking | `ranking/stock_ranker.py`, `ranking/opportunity_ranker.py` | Tests confirm comparison fields are present and stable | Not Started |
+| U2-T1 | Define the minimum score breakdown fields to expose | `bluechip/detector.py`, `ranking/*.py`, `api/app.py` | Breakdown schema documented and reviewable | Done |
+| U2-T2 | Surface ranking rationale in API and CLI outputs | `api/app.py`, `cli/commands.py`, `workflows/*.py` | Outputs include readable explanation fields | Done |
+| U2-T3 | Add comparison-friendly output fields for stock ranking | `ranking/stock_ranker.py`, `ranking/opportunity_ranker.py` | Tests confirm comparison fields are present and stable | Done |
 
 Assumptions:
 

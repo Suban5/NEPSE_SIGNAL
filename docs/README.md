@@ -23,6 +23,8 @@ Recent updates:
 - API Contracts now includes symbol/date/pagination validation notes and the backtest summary response contract
 - Workflow Reference now documents historical backtest validation and portfolio metric summaries
 - Blue-Chip Scoring now documents the detector-owned score access and merge helpers used by workflows and ranking views
+- U1 output standardization is documented with explicit field inventories across API analytics responses, workflow summaries, and CLI summary logs
+- U2 scoring explainability is documented with minimum score-breakdown fields, rationale fields, and comparison-friendly ranking fields
 
 **Operations:**
 - [API Server Guide](api-server.md) — deployment and HTTP usage

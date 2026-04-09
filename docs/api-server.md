@@ -64,4 +64,18 @@ Analytics endpoints include `execution_id` in responses:
 - `/analytics/opportunities`
 - `/analytics/signal-summary`
 
+These three analytics scan routes share the same top-level response fields:
+
+- `top_n`
+- `sector_relative`
+- `execution_id`
+- `summary`
+- `rows`
+
+For opportunity and signal-summary analytics rows, explainability fields may be present:
+
+- `trade_score_breakdown`
+- `ranking_rationale`
+- `trade_score_rank`, `confidence_rank`, `bluechip_rank`, `relative_trade_score`
+
 This `execution_id` maps analytics responses to workflow benchmark artifacts and structured observability logs.

@@ -39,3 +39,7 @@ def test_build_ranked_views_handles_bluechip_score_column_collision() -> None:
     assert not views["best_buy_signals"].empty
     assert views["best_buy_signals"].iloc[0]["symbol"] == "AAA"
     assert "bluechip_score" in views["best_buy_signals"].columns
+    assert "top_bluechips" in views
+    assert "bluechip_rank" in views["top_bluechips"].columns
+    assert "bluechip_percentile" in views["top_bluechips"].columns
+    assert "score_gap_from_top" in views["top_bluechips"].columns

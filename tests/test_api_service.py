@@ -180,6 +180,17 @@ def test_analytics_methods_share_cached_workflow_payload(monkeypatch: pytest.Mon
                     "confidence": 0.82,
                     "bluechip_score": 0.91,
                     "trade_score": 0.77,
+                    "trade_score_rank": 1,
+                    "confidence_rank": 1,
+                    "bluechip_rank": 1,
+                    "relative_trade_score": 1.0,
+                    "trade_score_breakdown": {
+                        "signal_strength": 0.32,
+                        "trend_strength": 0.30,
+                        "volume_momentum": 0.15,
+                        "pattern_confidence": 0.0,
+                    },
+                    "ranking_rationale": "trade_score=0.770, signal=BUY, confidence=0.820",
                 },
             ]
         ),
@@ -213,7 +224,59 @@ def test_analytics_methods_share_cached_workflow_payload(monkeypatch: pytest.Mon
     assert bluechip_response["rows"][0]["symbol"] == "NABIL"
     assert opportunities_response["rows"][0]["trade_score"] == 0.77
     assert signal_summary_response["rows"][0]["signal"] == "BUY"
+    assert signal_summary_response["rows"][0]["trade_score_rank"] == 1
+    assert "ranking_rationale" in signal_summary_response["rows"][0]
     assert signal_summary_response["summary"]["selected_symbols"] == 1
+
+
+def test_analytics_methods_share_same_top_level_contract(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Analytics scan endpoints should share a stable top-level response shape."""
+    service = _build_service(SimpleNamespace())
+    monkeypatch.setattr(
+        api_service_module,
+        "get_settings",
+        lambda: SimpleNamespace(data_cache_path=tmp_path, api_retry_attempts=1, api_retry_backoff_seconds=0.0),
+    )
+    monkeypatch.setattr(api_service_module, "BlueChipDetector", lambda config=None: SimpleNamespace())
+    monkeypatch.setattr(api_service_module, "MarketScanner", lambda: SimpleNamespace())
+
+    fake_context = SimpleNamespace(
+        execution_id="scan-shared001",
+        bluechip_ranked=pd.DataFrame([{"symbol": "NABIL", "bluechip_score": 0.91}]),
+        signal_df=pd.DataFrame(
+            [
+                {
+                    "symbol": "NABIL",
+                    "signal": "BUY",
+                    "confidence": 0.82,
+                    "bluechip_score": 0.91,
+                    "trade_score": 0.77,
+                },
+            ]
+        ),
+        to_summary=lambda: {
+            "workflow": "market_scan",
+            "execution_id": "scan-shared001",
+            "output_dir": str(tmp_path / "api" / "analytics" / "scan_top_20_sector_0"),
+            "top_n": 20,
+            "plot": False,
+            "snapshot_rows": 10,
+            "universe_symbols": 8,
+            "selected_symbols": 5,
+            "signal_rows": 5,
+        },
+    )
+
+    monkeypatch.setattr(api_service_module, "run_market_scan_workflow", lambda **_: fake_context)
+
+    bluechip_response = service.analytics_bluechip_ranking(top_n=20, sector_relative=False)
+    opportunities_response = service.analytics_opportunities(top_n=20, sector_relative=False)
+    signal_summary_response = service.analytics_signal_summary(top_n=20, sector_relative=False)
+
+    expected_keys = {"top_n", "sector_relative", "execution_id", "summary", "rows"}
+    assert set(bluechip_response.keys()) == expected_keys
+    assert set(opportunities_response.keys()) == expected_keys
+    assert set(signal_summary_response.keys()) == expected_keys
 
 
 def test_analytics_backtest_summary_returns_cached_payload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

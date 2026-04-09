@@ -229,6 +229,12 @@ class OpportunityRow(BaseModel):
     signal: Optional[str] = None
     confidence: Optional[float] = None
     bluechip_score: Optional[float] = None
+    trade_score_rank: Optional[int] = None
+    confidence_rank: Optional[int] = None
+    bluechip_rank: Optional[int] = None
+    relative_trade_score: Optional[float] = None
+    trade_score_breakdown: Optional[Dict[str, float]] = None
+    ranking_rationale: Optional[str] = None
 
 
 class SignalSummaryRow(BaseModel):
@@ -241,6 +247,12 @@ class SignalSummaryRow(BaseModel):
     confidence: Optional[float] = None
     bluechip_score: Optional[float] = None
     trade_score: Optional[float] = None
+    trade_score_rank: Optional[int] = None
+    confidence_rank: Optional[int] = None
+    bluechip_rank: Optional[int] = None
+    relative_trade_score: Optional[float] = None
+    trade_score_breakdown: Optional[Dict[str, float]] = None
+    ranking_rationale: Optional[str] = None
 
 
 class AnalyticsOpportunitiesResponse(BaseModel):

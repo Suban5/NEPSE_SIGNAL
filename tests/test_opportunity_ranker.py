@@ -25,4 +25,14 @@ def test_rank_opportunities_orders_by_trade_score() -> None:
 
     ranked = rank_opportunities(df)
     assert "trade_score" in ranked.columns
+    assert "trade_score_breakdown" in ranked.columns
+    assert "ranking_rationale" in ranked.columns
+    assert "trade_score_rank" in ranked.columns
+    assert "confidence_rank" in ranked.columns
+    assert "relative_trade_score" in ranked.columns
     assert ranked.iloc[0]["symbol"] == "AAA"
+    assert ranked.iloc[0]["trade_score_rank"] == 1
+    assert ranked.iloc[0]["relative_trade_score"] <= 1.0
+    assert isinstance(ranked.iloc[0]["trade_score_breakdown"], dict)
+    assert "signal_strength" in ranked.iloc[0]["trade_score_breakdown"]
+    assert "trade_score=" in ranked.iloc[0]["ranking_rationale"]

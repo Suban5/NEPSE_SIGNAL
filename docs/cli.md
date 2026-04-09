@@ -26,6 +26,18 @@ Outputs include ranking CSVs and scan_benchmark.json.
 
 CLI output now logs workflow completion with an `execution_id`. The same `execution_id` is persisted in `scan_benchmark.json` for trace correlation.
 
+Standard summary contract for `scan-market` logs and benchmark payload:
+- shared keys: `workflow`, `execution_id`
+- scan keys: `output_dir`, `top_n`, `plot`, `snapshot_rows`, `universe_symbols`, `selected_symbols`, `signal_rows`
+
+Ranking explainability fields in generated CSV outputs (`signal_summary.csv`, `best_buy_signals.csv` when available):
+- `trade_score_breakdown`
+- `ranking_rationale`
+- `trade_score_rank`
+- `confidence_rank`
+- `bluechip_rank`
+- `relative_trade_score`
+
 ### analyze
 
 ```bash
@@ -55,6 +67,14 @@ python main.py backtest-market --top-n 20 --lookback-days 252 --rebalance monthl
 Outputs include portfolio_backtest.json, portfolio_signal_set.csv, and backtest_benchmark.json.
 
 CLI output now logs workflow completion with an `execution_id`. The same `execution_id` is persisted in `backtest_benchmark.json` for trace correlation.
+
+Standard summary contract for `backtest-market` logs and benchmark payload:
+- shared keys: `workflow`, `execution_id`
+- backtest keys: `output_dir`, `top_n`, `lookback_days`, `rebalance`, `snapshot_rows`, `universe_symbols`, `selected_symbols`, `buy_symbols`, `backtested_symbols`, `signal_rows`, `portfolio_cagr`, `portfolio_max_drawdown`, `portfolio_sharpe_ratio`, `portfolio_total_return`, `historical_symbols_validated`, `historical_symbols_sufficient`, `historical_symbols_insufficient`
+
+Standard summary contract for `analyze` logs:
+- shared keys: `workflow`, `execution_id`
+- symbol-analysis keys: `symbol`, `history_rows`, `bluechip_score`, `signal`, `confidence`, `backtest_cagr`, `backtest_sharpe_ratio`
 
 ## Data Refresh Behavior
 

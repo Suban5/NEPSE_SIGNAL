@@ -91,6 +91,14 @@ Analytics response contract (shared fields):
 - summary (optional workflow summary object shared with CLI/workflow artifacts)
 - rows
 
+U1 field inventory (API, CLI, workflow alignment):
+
+| Surface | Contract Scope | Required Fields |
+|---|---|---|
+| API analytics scan routes (`/analytics/bluechip-ranking`, `/analytics/opportunities`, `/analytics/signal-summary`) | top-level response | `top_n`, `sector_relative`, `execution_id`, `summary`, `rows` |
+| Workflow summaries (`MarketScanContext.to_summary`, `MarketBacktestContext.to_summary`, `SymbolAnalysisContext.to_summary`) | summary payload | `workflow`, `execution_id` plus workflow-specific fields |
+| CLI workflow logs (`scan-market`, `backtest-market`, `analyze`) | emitted summary object | Uses `context.to_summary()` unchanged to preserve key parity with workflow summary and API `summary` |
+
 Typed response models:
 - `/analytics/bluechip-ranking` -> `AnalyticsBluechipRankingResponse`
 - `/analytics/opportunities` -> `AnalyticsOpportunitiesResponse`
@@ -112,6 +120,15 @@ Notes:
 - `AnalyticsOpportunitiesResponse`, `AnalyticsSignalSummaryResponse`, and the shared `AnalyticsRowsResponse` include an optional `summary` field that mirrors the workflow summary contract and keep typed row schemas with `extra=allow` to preserve compatibility with additive fields.
 - `WorkflowSummary` captures the standardized execution summary shared across CLI logs, workflow benchmark payloads, and API analytics responses.
 - For `market_backtest`, `WorkflowSummary` also includes portfolio metrics (`portfolio_cagr`, `portfolio_max_drawdown`, `portfolio_sharpe_ratio`, `portfolio_total_return`) and historical sufficiency counts (`historical_symbols_validated`, `historical_symbols_sufficient`, `historical_symbols_insufficient`).
+
+U2 explainability contract:
+
+- Minimum blue-chip score breakdown fields are exposed as `score_breakdown`: `market_cap`, `volume`, `stability`, `trend`, `fundamental`, `sector`.
+- Opportunity and signal-summary rows may include ranking rationale fields:
+  - `trade_score_breakdown` (weighted contribution map)
+  - `ranking_rationale` (readable rationale string)
+- Comparison-friendly fields used for ranking analysis:
+  - `trade_score_rank`, `confidence_rank`, `bluechip_rank`, `relative_trade_score`
 
 ### Observability
 - GET /metrics -> RequestMetricsResponse

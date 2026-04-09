@@ -51,16 +51,19 @@ This document tracks feature-level progress and remaining product milestones. It
 - [x] Added typed row models for opportunities and signal summary analytics responses.
 - [x] Exposed workflow category, stage, and workflow metadata in API error responses.
 - [x] Standardized analytics response assembly in `api/service.py`.
+- [x] Standardized analytics top-level response fields across scan routes (`top_n`, `sector_relative`, `execution_id`, `summary`, `rows`).
 
 ### cli
 - [x] Preserved CLI workflow commands with shared dependency wiring.
 - [x] Kept user-facing validation behavior aligned with workflow validation.
 - [x] Logged standardized workflow summary payloads for scan, backtest, and symbol analysis.
 - [x] Logged backtest historical validation and portfolio metrics alongside standardized summaries.
+- [x] Locked CLI summary logs to workflow `to_summary()` contracts for API/CLI/workflow field parity.
 
 ### analysis / ranking / backtesting
 - [x] Added backtesting validation against historical NEPSE data and exposed summary results via API and CLI.
 - [x] Enforced a single source of truth for blue-chip score access and ranking merge semantics across detector, workflows, and ranking modules.
+- [x] Added ranking explainability fields (`trade_score_breakdown`, `ranking_rationale`) and comparison fields (`trade_score_rank`, `confidence_rank`, `bluechip_rank`, `relative_trade_score`) in ranked opportunity outputs.
 
 ### reliability
 - [x] Strengthened API, service, and CLI input validation for symbol, date, and pagination inputs.
@@ -91,10 +94,10 @@ This document tracks feature-level progress and remaining product milestones. It
 - [ ] Expand generated API docs checks in CI.
 
 ### analysis / ranking / backtesting
-- [ ] Continue tightening scoring explainability docs and comparison guidance for future model tuning.
+- [ ] Evolve scoring rationale wording and thresholds as model tuning changes over time.
 
 ### api / cli / workflows
-- [ ] Continue normalizing any remaining output wrappers so future analytics and benchmark payloads stay aligned.
+- [ ] Maintain the standardized output contracts as new analytics routes and workflow summaries are introduced.
 
 ### product
 - [ ] Provide a lightweight dashboard for exploration and reporting.

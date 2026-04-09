@@ -406,6 +406,18 @@ def log_ranked_summary(
     workflow_name: str = "workflow",
 ) -> None:
     """Log concise ranking summary."""
+    best_buy_signals = views.get("best_buy_signals", pd.DataFrame())
+    rationale_preview: List[Dict[str, str]] = []
+    if not best_buy_signals.empty and "ranking_rationale" in best_buy_signals.columns:
+        top_rows = best_buy_signals.head(3)
+        for _, row in top_rows.iterrows():
+            rationale_preview.append(
+                {
+                    "symbol": str(row.get("symbol", "")),
+                    "rationale": str(row.get("ranking_rationale", "")),
+                }
+            )
+
     log_workflow_event(
         workflow=workflow_name,
         execution_id=execution_id,
@@ -414,6 +426,7 @@ def log_ranked_summary(
         best_buy_signals=int(len(views["best_buy_signals"])),
         strong_momentum=int(len(views["strong_momentum"])),
         high_risk_weak=int(len(views["high_risk_weak"])),
+        rationale_preview=rationale_preview,
     )
 
 

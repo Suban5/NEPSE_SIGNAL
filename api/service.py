@@ -205,7 +205,19 @@ class NepseApiService:
         signal_summary = context.signal_df.copy()
         summary_columns = [
             column
-            for column in ["symbol", "signal", "confidence", "bluechip_score", "trade_score"]
+            for column in [
+                "symbol",
+                "signal",
+                "confidence",
+                "bluechip_score",
+                "trade_score",
+                "trade_score_rank",
+                "confidence_rank",
+                "bluechip_rank",
+                "relative_trade_score",
+                "trade_score_breakdown",
+                "ranking_rationale",
+            ]
             if column in signal_summary.columns
         ]
 

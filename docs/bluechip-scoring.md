@@ -50,6 +50,17 @@ build_scoring_report provides:
 - symbol_breakdown
 - sector_summary
 
+Minimum score breakdown schema exposed in ranking outputs:
+
+- `market_cap`
+- `volume`
+- `stability`
+- `trend`
+- `fundamental`
+- `sector`
+
+These fields are emitted under `score_breakdown` and reused by API analytics ranking rows and CLI output artifacts.
+
 ## Single Source of Truth Contract
 
 The canonical blue-chip scoring contract now lives in `bluechip/detector.py` and is reused by workflows and ranking modules.

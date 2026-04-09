@@ -38,6 +38,18 @@ def build_ranked_views(bluechip_df: pd.DataFrame, signal_df: pd.DataFrame) -> Di
     merged = BlueChipDetector.merge_bluechip_scores(signal_df, bluechip_df)
 
     top_bluechips = bluechip_df.sort_values("bluechip_score", ascending=False).head(20)
+    if not top_bluechips.empty:
+        top_bluechips = top_bluechips.copy()
+        top_bluechips["bluechip_rank"] = top_bluechips["bluechip_score"].rank(method="dense", ascending=False).astype(int)
+        top_bluechips["bluechip_percentile"] = top_bluechips["bluechip_score"].rank(pct=True).round(4)
+        if "volatility" in top_bluechips.columns:
+            top_bluechips["volatility_rank"] = top_bluechips["volatility"].rank(method="dense", ascending=True).astype(int)
+        if "cagr" in top_bluechips.columns:
+            top_bluechips["cagr_rank"] = top_bluechips["cagr"].rank(method="dense", ascending=False).astype(int)
+
+        max_bluechip_score = float(top_bluechips["bluechip_score"].max())
+        top_bluechips["score_gap_from_top"] = (max_bluechip_score - top_bluechips["bluechip_score"]).round(4)
+
     best_buy_signals = merged[merged["signal"] == "BUY"].sort_values(
         ["confidence", "bluechip_score"], ascending=False
     )

@@ -426,6 +426,107 @@ def test_symbol_analysis_workflow_returns_context() -> None:
     assert summary["signal"] == "BUY"
 
 
+def test_workflow_summaries_share_common_contract_fields(tmp_path: Path) -> None:
+    """Workflow summaries should expose shared keys for cross-layer contract alignment."""
+    scan_dependencies = MarketScanDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame.assign(
+            sma20=frame["close"],
+            sma50=frame["close"],
+            sma200=frame["close"],
+            ema20=frame["close"],
+            rsi14=50.0,
+            macd=0.1,
+            macd_signal=0.05,
+            bb_upper=frame["close"] + 2,
+            bb_lower=frame["close"] - 2,
+            volume_sma20=frame["volume"],
+            volume_trend=1.0,
+        ),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda df: df,
+        build_ranked_views_fn=lambda bc, sig: {
+            "top_bluechips": bc,
+            "best_buy_signals": sig,
+            "strong_momentum": sig,
+            "high_risk_weak": sig,
+        },
+    )
+    backtest_dependencies = MarketBacktestDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame.assign(
+            sma20=frame["close"],
+            sma50=frame["close"],
+            sma200=frame["close"],
+            ema20=frame["close"],
+            rsi14=50.0,
+            macd=0.1,
+            macd_signal=0.05,
+            bb_upper=frame["close"] + 2,
+            bb_lower=frame["close"] - 2,
+            volume_sma20=frame["volume"],
+            volume_trend=1.0,
+        ),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda df: df,
+    )
+    symbol_dependencies = SymbolAnalysisDependencies(
+        coordinator=_coordinator(),
+        detector=BlueChipDetector(),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            symbol=symbol,
+            signal="BUY",
+            confidence=0.9,
+            indicators={},
+            timestamp=pd.Timestamp("2025-01-01"),
+        ),
+        add_indicators_fn=lambda frame: frame.assign(
+            sma20=frame["close"],
+            sma50=frame["close"],
+            sma200=frame["close"],
+            ema20=frame["close"],
+            rsi14=50.0,
+            macd=0.1,
+            macd_signal=0.05,
+            bb_upper=frame["close"] + 2,
+            bb_lower=frame["close"] - 2,
+            volume_sma20=frame["volume"],
+            volume_trend=1.0,
+        ),
+    )
+
+    scan_summary = run_market_scan_workflow(scan_dependencies, tmp_path / "scan", top_n=2, plot=False).to_summary()
+    backtest_summary = run_market_backtest_workflow(
+        backtest_dependencies,
+        tmp_path / "backtest",
+        top_n=2,
+        lookback_days=20,
+        rebalance="static",
+    ).to_summary()
+    symbol_summary = run_symbol_analysis_workflow(
+        symbol_dependencies,
+        symbol="AAA",
+        start_date=None,
+        end_date=None,
+    ).to_summary()
+
+    required_shared_keys = {"workflow", "execution_id"}
+    assert required_shared_keys.issubset(scan_summary)
+    assert required_shared_keys.issubset(backtest_summary)
+    assert required_shared_keys.issubset(symbol_summary)
+
+
 def test_build_fundamentals_map_stops_after_first_failure() -> None:
     """Fundamentals fetch should disable repeated upstream calls after a failure."""
 
