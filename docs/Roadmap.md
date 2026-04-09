@@ -61,13 +61,15 @@ This document tracks feature-level progress and remaining product milestones. It
   - [x] Added service-layer regression tests for retry policy, cache reuse, and analytics payload contract/caching behavior.
   - [x] Added API regression tests for timeout handling contract (`UPSTREAM_TIMEOUT`) and ranking failure classification metadata.
   - [x] Synchronized documentation with newly tested negative-path contracts in `api-contracts.md` and `workflows.md`.
+  - [x] Added dedicated high-coverage suites for normalizers, signal adapter, cache adapter, candlestick adapter, persistence, and provider layers.
+  - [x] Increased overall project test coverage baseline to roughly 93 percent.
 
 ## In Progress
 
 ### testing
-- [ ] Increase test coverage to at least 80 percent for service and workflow layers.
-  - [ ] Measure current coverage baseline for critical modules.
-  - [ ] Add tests for remaining service/workflow uncovered branches.
+  - [x] Increase test coverage to at least 80 percent for service and workflow layers.
+  - [x] Measure current coverage baseline for critical modules.
+  - [x] Add tests for high-impact remaining uncovered branches in core adapters and data layers.
   - [ ] Enable coverage reporting in CI pipeline.
 
 ## Remaining / Planned

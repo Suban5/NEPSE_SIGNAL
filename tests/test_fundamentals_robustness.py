@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -58,7 +58,7 @@ def test_normalize_fundamentals_empty_payload() -> None:
 
 def test_normalize_fundamentals_none_payload() -> None:
     """normalize_fundamentals should return defaults for None payload."""
-    result = NepseDataFetcher.normalize_fundamentals(None)
+    result = NepseDataFetcher.normalize_fundamentals(cast(Any, None))
 
     assert result == {
         "earnings_growth": 0.0,
@@ -69,7 +69,7 @@ def test_normalize_fundamentals_none_payload() -> None:
 
 def test_normalize_fundamentals_non_dict_payload() -> None:
     """normalize_fundamentals should return defaults for non-dict payload."""
-    result = NepseDataFetcher.normalize_fundamentals("invalid")
+    result = NepseDataFetcher.normalize_fundamentals(cast(Any, "invalid"))
 
     assert result == {
         "earnings_growth": 0.0,
@@ -223,7 +223,7 @@ def test_validate_metric_preserves_very_high_values() -> None:
 def test_fetch_company_fundamentals_success(monkeypatch: pytest.MonkeyPatch) -> None:
     """fetch_company_fundamentals should return payload when available."""
     fetcher = _setup_fake_client(monkeypatch)
-    fetcher._unofficial_client.return_value = {
+    cast(Any, fetcher._unofficial_client).return_value = {
         "symbol": "NABIL",
         "earningsGrowth": 0.15,
         "revenueGrowth": 0.12,
@@ -239,7 +239,7 @@ def test_fetch_company_fundamentals_success(monkeypatch: pytest.MonkeyPatch) -> 
 def test_fetch_company_fundamentals_empty_response(monkeypatch: pytest.MonkeyPatch) -> None:
     """fetch_company_fundamentals should return empty dict on empty response."""
     fetcher = _setup_fake_client(monkeypatch)
-    fetcher._unofficial_client.return_value = {}
+    cast(Any, fetcher._unofficial_client).return_value = {}
 
     result = fetcher.fetch_company_fundamentals("NABIL")
 
@@ -249,7 +249,7 @@ def test_fetch_company_fundamentals_empty_response(monkeypatch: pytest.MonkeyPat
 def test_fetch_company_fundamentals_invalid_response_type(monkeypatch: pytest.MonkeyPatch) -> None:
     """fetch_company_fundamentals should return empty dict on non-dict response."""
     fetcher = _setup_fake_client(monkeypatch)
-    fetcher._unofficial_client.return_value = "invalid"
+    cast(Any, fetcher._unofficial_client).return_value = "invalid"
 
     result = fetcher.fetch_company_fundamentals("NABIL")
 
@@ -259,7 +259,7 @@ def test_fetch_company_fundamentals_invalid_response_type(monkeypatch: pytest.Mo
 def test_fetch_company_fundamentals_none_response(monkeypatch: pytest.MonkeyPatch) -> None:
     """fetch_company_fundamentals should return empty dict on None response."""
     fetcher = _setup_fake_client(monkeypatch)
-    fetcher._unofficial_client.return_value = None
+    cast(Any, fetcher._unofficial_client).return_value = None
 
     result = fetcher.fetch_company_fundamentals("NABIL")
 
@@ -274,7 +274,7 @@ def test_fetch_company_fundamentals_exception_handling(monkeypatch: pytest.Monke
     def raise_exception(symbol: str) -> None:
         raise RuntimeError("API error")
 
-    fetcher._unofficial_client.getCompanyDetails = raise_exception
+    cast(Any, fetcher._unofficial_client).getCompanyDetails = raise_exception
 
     result = fetcher.fetch_company_fundamentals("NABIL")
 
@@ -308,7 +308,7 @@ def test_fetch_company_fundamentals_missing_method(monkeypatch: pytest.MonkeyPat
 def test_fundamentals_workflow_end_to_end(monkeypatch: pytest.MonkeyPatch) -> None:
     """End-to-end workflow: fetch fundamentals and normalize."""
     fetcher = _setup_fake_client(monkeypatch)
-    fetcher._unofficial_client.return_value = {
+    cast(Any, fetcher._unofficial_client).return_value = {
         "symbol": "NABIL",
         "earningsGrowth": 0.25,  # 25% growth
         "revenueGrowth": 0.18,  # 18% growth
@@ -329,7 +329,7 @@ def test_fundamentals_workflow_end_to_end(monkeypatch: pytest.MonkeyPatch) -> No
 def test_fundamentals_workflow_with_problematic_data(monkeypatch: pytest.MonkeyPatch) -> None:
     """End-to-end with problematic data: negative values handled, high values preserved."""
     fetcher = _setup_fake_client(monkeypatch)
-    fetcher._unofficial_client.return_value = {
+    cast(Any, fetcher._unofficial_client).return_value = {
         "symbol": "RISKY",
         "earningsGrowth": -0.5,  # Negative
         "revenueGrowth": 3.0,  # Unusually high but valid

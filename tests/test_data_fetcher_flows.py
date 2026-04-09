@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -217,7 +217,7 @@ def test_fetch_daily_market_snapshot_hydrates_fallback_from_local_history(
         def save_snapshot(self, snapshot_df: pd.DataFrame) -> None:
             del snapshot_df
 
-    fetcher._persistence = _FakePersistence()
+    cast(Any, fetcher)._persistence = _FakePersistence()
 
     snapshot = fetcher.fetch_daily_market_snapshot(force_refresh=True)
     nabil = snapshot[snapshot["symbol"] == "NABIL"].iloc[0]

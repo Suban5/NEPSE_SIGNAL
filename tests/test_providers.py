@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import pytest
@@ -17,6 +17,19 @@ from nepse_api.providers import (
 )
 
 
+def _build_client_provider(
+    client: Any,
+    retry: RetryPolicy | None = None,
+    suppress_output: bool = False,
+) -> NepseClientProvider:
+    """Create provider with test stub client while satisfying static typing."""
+    return NepseClientProvider(
+        client=cast(Any, client),
+        retry=retry or RetryPolicy(attempts=1),
+        suppress_output=suppress_output,
+    )
+
+
 def test_retry_policy_defaults() -> None:
     policy = RetryPolicy()
 
@@ -27,7 +40,7 @@ def test_retry_policy_defaults() -> None:
 
 def test_get_live_market_raw_calls_client_method() -> None:
     client = SimpleNamespace(getLiveMarket=lambda: [{"symbol": "NABIL"}])
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=1), suppress_output=False)
+    provider = _build_client_provider(client=client, suppress_output=False)
 
     result = provider.get_live_market_raw()
 
@@ -36,7 +49,7 @@ def test_get_live_market_raw_calls_client_method() -> None:
 
 def test_get_security_list_raw_calls_client_method() -> None:
     client = SimpleNamespace(getSecurityList=lambda: [{"symbol": "NABIL"}])
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=1), suppress_output=False)
+    provider = _build_client_provider(client=client, suppress_output=False)
 
     result = provider.get_security_list_raw()
 
@@ -45,7 +58,7 @@ def test_get_security_list_raw_calls_client_method() -> None:
 
 def test_get_sector_scrips_raw_calls_client_method() -> None:
     client = SimpleNamespace(getSectorScrips=lambda: {"BANKING": ["NABIL"]})
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=1), suppress_output=False)
+    provider = _build_client_provider(client=client, suppress_output=False)
 
     result = provider.get_sector_scrips_raw()
 
@@ -60,7 +73,7 @@ def test_get_company_history_raw_uppercases_symbol_and_passes_dates() -> None:
         return [{"date": "2024-01-01", "close": 1000}]
 
     client = SimpleNamespace(getCompanyPriceVolumeHistory=_history)
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=1), suppress_output=False)
+    provider = _build_client_provider(client=client, suppress_output=False)
 
     result = provider.get_company_history_raw("nabil", date(2024, 1, 1), date(2024, 1, 31))
 
@@ -78,7 +91,7 @@ def test_get_company_details_raw_uppercases_symbol() -> None:
         return {"symbol": kwargs["symbol"]}
 
     client = SimpleNamespace(getCompanyDetails=_details)
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=1), suppress_output=False)
+    provider = _build_client_provider(client=client, suppress_output=False)
 
     result = provider.get_company_details_raw("nabil")
 
@@ -88,7 +101,7 @@ def test_get_company_details_raw_uppercases_symbol() -> None:
 
 def test_call_with_retry_returns_on_first_success() -> None:
     client = SimpleNamespace(getLiveMarket=lambda: [1])
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=3), suppress_output=False)
+    provider = _build_client_provider(client=client, retry=RetryPolicy(attempts=3), suppress_output=False)
 
     assert provider._call_with_retry("getLiveMarket") == [1]
 
@@ -110,7 +123,7 @@ def test_call_with_retry_retries_then_succeeds(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(module.time, "sleep", lambda seconds: sleeps.append(seconds))
 
     client = SimpleNamespace(getLiveMarket=_flaky)
-    provider = NepseClientProvider(
+    provider = _build_client_provider(
         client=client,
         retry=RetryPolicy(attempts=3, backoff_seconds=0.5, jitter_seconds=0.1),
         suppress_output=False,
@@ -135,7 +148,7 @@ def test_call_with_retry_raises_last_exception_after_attempts(monkeypatch: pytes
     monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
 
     client = SimpleNamespace(getLiveMarket=_always_fail)
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=2), suppress_output=False)
+    provider = _build_client_provider(client=client, retry=RetryPolicy(attempts=2), suppress_output=False)
 
     with pytest.raises(ValueError, match="hard fail"):
         provider._call_with_retry("getLiveMarket")
@@ -158,7 +171,7 @@ def test_call_with_retry_does_not_sleep_when_backoff_non_positive(monkeypatch: p
     monkeypatch.setattr(module.time, "sleep", lambda seconds: sleeps.append(seconds))
 
     client = SimpleNamespace(getLiveMarket=_flaky)
-    provider = NepseClientProvider(
+    provider = _build_client_provider(
         client=client,
         retry=RetryPolicy(attempts=2, backoff_seconds=0.0, jitter_seconds=0.0),
         suppress_output=False,
@@ -177,7 +190,7 @@ def test_call_with_retry_suppresses_stdout_and_stderr(capsys: pytest.CaptureFixt
         return {"ok": True}
 
     client = SimpleNamespace(getLiveMarket=_chatty)
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=1), suppress_output=True)
+    provider = _build_client_provider(client=client, suppress_output=True)
 
     result = provider._call_with_retry("getLiveMarket")
 
@@ -193,7 +206,7 @@ def test_call_with_retry_allows_output_when_suppression_disabled(capsys: pytest.
         return "ok"
 
     client = SimpleNamespace(getLiveMarket=_chatty)
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=1), suppress_output=False)
+    provider = _build_client_provider(client=client, suppress_output=False)
 
     result = provider._call_with_retry("getLiveMarket")
 
@@ -204,7 +217,7 @@ def test_call_with_retry_allows_output_when_suppression_disabled(capsys: pytest.
 
 def test_call_with_retry_raises_attribute_error_when_method_missing() -> None:
     client = SimpleNamespace()
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=2), suppress_output=False)
+    provider = _build_client_provider(client=client, retry=RetryPolicy(attempts=2), suppress_output=False)
 
     with pytest.raises(AttributeError):
         provider._call_with_retry("missingMethod")
@@ -212,7 +225,7 @@ def test_call_with_retry_raises_attribute_error_when_method_missing() -> None:
 
 def test_call_with_retry_raises_runtime_error_when_attempts_zero() -> None:
     client = SimpleNamespace(getLiveMarket=lambda: [1])
-    provider = NepseClientProvider(client=client, retry=RetryPolicy(attempts=0), suppress_output=False)
+    provider = _build_client_provider(client=client, retry=RetryPolicy(attempts=0), suppress_output=False)
 
     with pytest.raises(RuntimeError, match="Failed call: getLiveMarket"):
         provider._call_with_retry("getLiveMarket")

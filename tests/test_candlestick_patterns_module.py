@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, tzinfo
 from types import SimpleNamespace
 
 import pandas as pd
@@ -99,7 +99,7 @@ def test_detect_patterns_uses_current_utc_when_df_empty(monkeypatch: pytest.Monk
 
     class _FrozenDatetime:
         @staticmethod
-        def now(tz: object | None = None) -> datetime:
+        def now(tz: tzinfo | None = None) -> datetime:
             if tz is None:
                 return fixed_now.replace(tzinfo=None)
             return fixed_now.astimezone(tz)
