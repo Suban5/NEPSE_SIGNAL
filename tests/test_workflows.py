@@ -13,7 +13,12 @@ import pytest
 
 from bluechip.detector import BlueChipDetector
 from market.market_scanner import MarketScanner
-from workflows.common import build_fundamentals_map, fetch_market_snapshot
+from workflows.common import (
+    build_fundamentals_map,
+    build_symbol_signal_row,
+    fetch_historical_universe,
+    fetch_market_snapshot,
+)
 from workflows.errors import WorkflowDataError, WorkflowRankingError, WorkflowValidationError
 from workflows.market_backtest import (
     MarketBacktestDependencies,
@@ -447,6 +452,56 @@ def test_build_fundamentals_map_stops_after_first_failure() -> None:
     assert all(values["earnings_growth"] == 0.0 for values in result.values())
 
 
+def test_build_symbol_signal_row_returns_none_for_missing_history() -> None:
+    """Symbol row builder should skip symbols with no historical rows."""
+    result = build_symbol_signal_row(
+        symbol="AAA",
+        history=pd.DataFrame(),
+        bluechip_ranked=pd.DataFrame({"symbol": ["AAA"], "bluechip_score": [0.9]}),
+        add_indicators_fn=lambda frame: frame,
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+    )
+
+    assert result is None
+
+
+def test_build_symbol_signal_row_builds_expected_payload() -> None:
+    """Symbol row builder should produce the signal payload for one symbol."""
+    history = _build_history("AAA", 100.0).head(5).copy()
+
+    result = build_symbol_signal_row(
+        symbol="AAA",
+        history=history,
+        bluechip_ranked=pd.DataFrame({"symbol": ["AAA"], "bluechip_score": [0.88]}),
+        add_indicators_fn=lambda frame: frame.assign(
+            sma20=frame["close"],
+            sma50=frame["close"],
+            sma200=frame["close"],
+            ema20=frame["close"],
+            rsi14=50.0,
+            macd=0.1,
+            macd_signal=0.05,
+            bb_upper=frame["close"] + 2,
+            bb_lower=frame["close"] - 2,
+            volume_sma20=frame["volume"],
+            volume_trend=1.0,
+        ),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={"ema20": 1.0}, patterns={}
+        ),
+    )
+
+    assert result is not None
+    assert result["symbol"] == "AAA"
+    assert result["signal"] == "BUY"
+    assert result["confidence"] == 0.9
+    assert result["bluechip_score"] == round(0.88, 4)
+
+
 def test_symbol_analysis_invalid_symbol_is_classified() -> None:
     """Single-symbol analysis should classify invalid symbols as validation errors."""
     dependencies = SymbolAnalysisDependencies(
@@ -482,3 +537,35 @@ def test_fetch_market_snapshot_logs_source_breakdown(caplog) -> None:
     assert '"event": "snapshot_source_breakdown"' in caplog.text
     assert "historical_fallback=1" in caplog.text
     assert "security_master_fallback=1" in caplog.text
+
+
+def test_fetch_historical_universe_logs_completion(caplog) -> None:
+    """Historical universe fetch should log completion metadata."""
+    coordinator = _coordinator()
+
+    with caplog.at_level("INFO"):
+        historical_universe = fetch_historical_universe(
+            coordinator,
+            execution_id="test-exec",
+            workflow_name="market_scan",
+        )
+
+    assert set(historical_universe.keys()) == {"AAA", "BBB"}
+    assert '"event": "fetch_historical_universe_completed"' in caplog.text
+
+
+def test_fetch_historical_universe_classifies_validation_errors() -> None:
+    """Historical universe fetch should classify malformed payloads as validation failures."""
+    coordinator = _coordinator()
+    coordinator.get_universe_with_history = lambda lookback_years=5, force_refresh=False: {
+        "AAA": pd.DataFrame({"date": pd.date_range("2025-01-01", periods=3), "close": [1.0, 2.0, 3.0]})
+    }
+
+    with pytest.raises(WorkflowValidationError, match="missing columns") as exc_info:
+        fetch_historical_universe(
+            coordinator,
+            execution_id="test-exec",
+            workflow_name="market_scan",
+        )
+
+    assert exc_info.value.stage == "fetch"

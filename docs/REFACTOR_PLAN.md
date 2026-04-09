@@ -26,6 +26,7 @@ This document tracks technical refactoring status and architectural decisions.
 - [x] Added shared validation helpers for `top_n`, `lookback_days`, `rebalance`, and CLI `limit` inputs.
 - [x] Added workflow regression tests for summary, failure classification, and invalid parameter handling.
 - [x] Added historical-data sufficiency validation to market backtest with benchmark-visible validation metadata.
+- [x] Extracted shared fetch+validate+classification helper in `workflows/common.py` to reduce duplicated orchestration error handling across snapshot and universe fetch paths.
 
 ### api
 - [x] Hardened API contracts with typed models and structured `ApiErrorResponse` payloads.
@@ -73,7 +74,7 @@ This document tracks technical refactoring status and architectural decisions.
 - [ ] Introduce versioned API response handling and explicit backward-compatibility rules.
 
 ### workflows
-- [ ] Continue tightening workflow orchestration boundaries so shared helpers live in one place.
+- [ ] Continue incremental orchestration cleanup after D1 completion as new duplication hotspots are identified.
 
 ### docs / ci
 - [ ] Expand generated API docs checks in CI.

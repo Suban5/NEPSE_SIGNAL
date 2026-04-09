@@ -43,6 +43,7 @@ This document tracks feature-level progress and remaining product milestones. It
 - [x] Added workflow failure classification for fetch, scan, score, rank, signal, and backtest stages.
 - [x] Added shared validation helpers for workflow and CLI inputs.
 - [x] Standardized workflow summary payloads for scan, backtest, and symbol analysis.
+- [x] Completed D1 boundary cleanup by extracting shared fetch/validation orchestration helpers in `workflows/common.py` and preserving workflow outputs under regression tests.
 
 ### api
 - [x] Exposed analytics execution IDs in API responses for end-to-end traceability.

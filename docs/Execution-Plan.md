@@ -23,7 +23,7 @@ This document is a planning template for future implementation work. It is inten
 | Reliability | 2 | 0 | 0 | 2 |
 | Usability | 2 | 2 | 0 | 0 |
 | Scalability | 2 | 2 | 0 | 0 |
-| Technical Debt | 2 | 1 | 0 | 1 |
+| Technical Debt | 2 | 0 | 0 | 2 |
 | Observability | 2 | 2 | 0 | 0 |
 | Versioning and Contracts | 2 | 2 | 0 | 0 |
 | Backtesting | 2 | 1 | 0 | 1 |
@@ -302,16 +302,16 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| D1 | Refactor workflow orchestration boundaries | Workflow responsibilities are clearer and easier to maintain | Workflow tests still pass after refactor | Not Started |
+| D1 | Refactor workflow orchestration boundaries | Workflow responsibilities are clearer and easier to maintain | Workflow tests still pass after refactor | Done |
 | D2 | Enforce a single source of truth for scoring logic | Scoring logic lives in one primary module path | Scoring tests confirm consistent results across consumers | Done |
 
 D1 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| D1-T1 | Review workflow responsibilities and identify boundary issues | `workflows/common.py`, `workflows/market_scan.py`, `workflows/market_backtest.py`, `workflows/symbol_analysis.py` | Boundary map documented with clear ownership areas | Not Started |
-| D1-T2 | Separate orchestration from transformation helpers | `workflows/common.py` | Orchestration functions are smaller and more focused | Not Started |
-| D1-T3 | Confirm refactor preserves workflow outputs | `tests/test_workflows.py` | Workflow regression tests pass after refactor | Not Started |
+| D1-T1 | Review workflow responsibilities and identify boundary issues | `workflows/common.py`, `workflows/market_scan.py`, `workflows/market_backtest.py`, `workflows/symbol_analysis.py` | Boundary map documented with clear ownership areas | Done |
+| D1-T2 | Separate orchestration from transformation helpers | `workflows/common.py` | Orchestration functions are smaller and more focused | Done |
+| D1-T3 | Confirm refactor preserves workflow outputs | `tests/test_workflows.py` | Workflow regression tests pass after refactor | Done |
 
 D2 Task List:
 

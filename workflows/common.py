@@ -131,6 +131,40 @@ def build_fundamentals_map(fetcher: Any, symbols: List[str]) -> Dict[str, Dict[s
     return fundamentals_map
 
 
+def build_symbol_signal_row(
+    symbol: str,
+    history: pd.DataFrame | None,
+    bluechip_ranked: pd.DataFrame,
+    add_indicators_fn: Callable[[pd.DataFrame], pd.DataFrame],
+    detect_patterns_fn: Callable[[pd.DataFrame], List[Any]],
+    build_trade_signal_fn: Callable[[str, pd.DataFrame, List[Any], float], Any],
+    plot: bool = False,
+    chart_dir: Optional[str] = None,
+    save_chart_fn: Optional[Callable[[pd.DataFrame, str, str], None]] = None,
+) -> Optional[Dict[str, float | str | bool]]:
+    """Build one signal row for a symbol when history is available."""
+    if history is None or history.empty:
+        return None
+
+    technical_df = add_indicators_fn(history)
+    pattern_map = detect_market_patterns(technical_df)
+    pattern_results = detect_patterns_fn(technical_df)
+    bluechip_score = BlueChipDetector.get_symbol_score(bluechip_ranked, symbol, default=0.0)
+    signal = build_trade_signal_fn(symbol, technical_df, pattern_results, bluechip_score)
+
+    if plot and chart_dir and save_chart_fn is not None:
+        save_chart_fn(technical_df, symbol, chart_dir)
+
+    return build_signal_row(
+        symbol=symbol,
+        bluechip_score=bluechip_score,
+        signal_type=signal.signal,
+        confidence=signal.confidence,
+        indicators=signal.indicators,
+        patterns=pattern_map,
+    )
+
+
 def compute_symbol_signal_rows(
     symbols: List[str],
     filtered_history: Dict[str, pd.DataFrame],
@@ -146,34 +180,22 @@ def compute_symbol_signal_rows(
     settings = get_settings()
     max_workers = max(1, int(settings.market_parallel_workers))
 
-    def _build_for_symbol(symbol: str) -> Optional[Dict[str, float | str | bool]]:
-        history = filtered_history.get(symbol)
-        if history is None or history.empty:
-            return None
-
-        technical_df = add_indicators_fn(history)
-        pattern_map = detect_market_patterns(technical_df)
-        pattern_results = detect_patterns_fn(technical_df)
-        bluechip_score = BlueChipDetector.get_symbol_score(bluechip_ranked, symbol, default=0.0)
-        signal = build_trade_signal_fn(symbol, technical_df, pattern_results, bluechip_score)
-
-        if plot and chart_dir and save_chart_fn is not None:
-            save_chart_fn(technical_df, symbol, chart_dir)
-
-        return build_signal_row(
-            symbol=symbol,
-            bluechip_score=bluechip_score,
-            signal_type=signal.signal,
-            confidence=signal.confidence,
-            indicators=signal.indicators,
-            patterns=pattern_map,
-        )
-
     rows_by_symbol: Dict[str, Dict[str, float | str | bool]] = {}
     ordered_symbols = list(symbols)
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_by_symbol: Dict[str, Future[Optional[Dict[str, float | str | bool]]]] = {
-            symbol: executor.submit(_build_for_symbol, symbol)
+            symbol: executor.submit(
+                build_symbol_signal_row,
+                symbol,
+                filtered_history.get(symbol),
+                bluechip_ranked,
+                add_indicators_fn,
+                detect_patterns_fn,
+                build_trade_signal_fn,
+                plot,
+                chart_dir,
+                save_chart_fn,
+            )
             for symbol in ordered_symbols
         }
         for symbol in ordered_symbols:
@@ -218,6 +240,33 @@ def write_benchmark_snapshot(output_dir: Path, file_name: str, payload: Dict[str
     (output_dir / file_name).write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
 
 
+def _fetch_with_validation(
+    workflow_name: str,
+    execution_id: str,
+    fetch_fn: Callable[[], Any],
+    validate_fn: Callable[[Any], None],
+) -> Any:
+    """Run fetch and validation with consistent workflow failure classification."""
+    try:
+        payload = fetch_fn()
+        validate_fn(payload)
+        return payload
+    except Exception as exc:
+        failure = classify_workflow_exception(workflow_name, "fetch", exc)
+        log_workflow_event(
+            workflow=workflow_name,
+            execution_id=execution_id,
+            event="workflow_failed",
+            level=logging.ERROR,
+            stage=failure.stage,
+            category=failure.category,
+            error_type=exc.__class__.__name__,
+            retriable=failure.retriable,
+            message=str(exc),
+        )
+        raise failure from exc
+
+
 
 
 def fetch_market_snapshot(
@@ -238,23 +287,12 @@ def fetch_market_snapshot(
         event="fetch_market_snapshot_started",
         force_refresh=bool(force_refresh),
     )
-    try:
-        snapshot = coordinator.get_market_snapshot(force_refresh=force_refresh)
-        validate_snapshot(snapshot)
-    except Exception as exc:
-        failure = classify_workflow_exception(workflow_name, "fetch", exc)
-        log_workflow_event(
-            workflow=workflow_name,
-            execution_id=execution_id,
-            event="workflow_failed",
-            level=logging.ERROR,
-            stage=failure.stage,
-            category=failure.category,
-            error_type=exc.__class__.__name__,
-            retriable=failure.retriable,
-            message=str(exc),
-        )
-        raise failure from exc
+    snapshot = _fetch_with_validation(
+        workflow_name=workflow_name,
+        execution_id=execution_id,
+        fetch_fn=lambda: coordinator.get_market_snapshot(force_refresh=force_refresh),
+        validate_fn=validate_snapshot,
+    )
 
     log_workflow_event(
         workflow=workflow_name,
@@ -309,26 +347,15 @@ def fetch_historical_universe(
         lookback_years=int(lookback_years),
         force_refresh=bool(force_refresh),
     )
-    try:
-        historical_universe = coordinator.get_universe_with_history(
+    historical_universe = _fetch_with_validation(
+        workflow_name=workflow_name,
+        execution_id=execution_id,
+        fetch_fn=lambda: coordinator.get_universe_with_history(
             lookback_years=lookback_years,
             force_refresh=force_refresh,
-        )
-        validate_historical_universe(historical_universe)
-    except Exception as exc:
-        failure = classify_workflow_exception(workflow_name, "fetch", exc)
-        log_workflow_event(
-            workflow=workflow_name,
-            execution_id=execution_id,
-            event="workflow_failed",
-            level=logging.ERROR,
-            stage=failure.stage,
-            category=failure.category,
-            error_type=exc.__class__.__name__,
-            retriable=failure.retriable,
-            message=str(exc),
-        )
-        raise failure from exc
+        ),
+        validate_fn=validate_historical_universe,
+    )
 
     log_workflow_event(
         workflow=workflow_name,
@@ -337,6 +364,8 @@ def fetch_historical_universe(
         symbol_count=int(len(historical_universe)),
     )
     return historical_universe
+
+
 def build_signal_row(
     symbol: str,
     bluechip_score: float,
