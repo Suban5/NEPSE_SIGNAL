@@ -95,6 +95,26 @@ This document tracks feature-level progress and remaining product milestones. It
   - [x] Validated refactor with full test suite (396 tests passing, 2026-04-09).
   - [x] Frozen UI1 contract (endpoints and field shapes) in `docs/api-contracts.md` for stable dashboard consumption.
 
+### ui / dashboard (UI1 & UI2)
+- [x] **UI1 Complete (2026-04-09):** Defined minimal dashboard scope with 4 panels (signals, rankings, backtest summary, observability).
+  - [x] UI1-T1: Defined dashboard screens and data needs with 3 primary + 1 optional panel.
+  - [x] UI1-T2: Confirmed zero backend logic duplication across all scoring/ranking/backtesting modules.
+  - [x] UI1-T3: Identified minimum API surface: 5 frozen endpoints with required fields documented.
+  - [x] Reference templates: UI1_Dashboard_Scope.md, UI1_API_Contract_Mapping.md (preserved as backup).
+  
+- [x] **UI2 Complete (2026-04-09):** Mapped endpoints to views and added comprehensive smoke validation tests.
+  - [x] UI2-T1: Endpoint-to-view mapping with field transformations (API field → UI display format) for all 4 panels.
+  - [x] UI2-T2: Charting/reporting reuse evaluated; documented existing OHLC functions and recommended native UI charting for analytics.
+  - [x] UI2-T3: Created 6 curl-based smoke tests (tests/ui2_smoke_tests.sh) validating all endpoints + error handling.
+  - [x] Data freshness strategy: HTTP cache with manual refresh option.
+  - [x] Production reference: UI2_Endpoint_View_Mapping.md with complete field definitions.
+  
+- Dashboard implementation ready with:
+  - Frozen contract for 5 endpoints (no breaking changes until UI1 released).
+  - Complete field mapping for 4 visualizable panels.
+  - Smoke tests for pre-deployment validation: `bash tests/ui2_smoke_tests.sh http://localhost:8000`.
+  - Zero backend logic duplication; display-only architecture.
+
 ## In Progress
 
 ### testing
