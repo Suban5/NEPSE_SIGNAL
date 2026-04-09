@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-08
+Last Reviewed: 2026-04-09
 Source of Truth: main.py, cli/commands.py, config/settings.py, workflows/*.py, api/app.py, nepse_api/*.py
 Validation Method: Code + Tests + E2E Parity Tests
 
@@ -66,8 +66,8 @@ python main.py run-api --host 0.0.0.0 --port 8000 --reload
 Workflow observability:
 
 - `scan-market`, `backtest-market`, and `analyze` emit a workflow `execution_id` in CLI logs
-- benchmark artifacts include the same `execution_id` for cross-run correlation
-- analytics API responses include `execution_id` for correlation with workflow logs/artifacts
+- benchmark artifacts include the same `execution_id` and standardized `summary` payload for cross-run correlation
+- analytics API responses include `execution_id` and `summary` for correlation with workflow logs/artifacts
 
 Snapshot fallback order:
 
@@ -99,7 +99,7 @@ Common output files under output directory:
 - portfolio_signal_set.csv
 - backtest_benchmark.json
 
-Benchmark JSON files (`scan_benchmark.json`, `backtest_benchmark.json`) include `execution_id` for traceability across logs and outputs.
+Benchmark JSON files (`scan_benchmark.json`, `backtest_benchmark.json`) include `execution_id` and `summary` for traceability across logs and outputs.
 
 Persistent fetched datasets under data/datasets:
 
