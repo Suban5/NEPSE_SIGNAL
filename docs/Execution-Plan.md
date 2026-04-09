@@ -26,7 +26,7 @@ This document is a planning template for future implementation work. It is inten
 | Technical Debt | 2 | 0 | 0 | 2 |
 | Observability | 2 | 0 | 0 | 2 |
 | Versioning and Contracts | 2 | 0 | 0 | 2 |
-| Backtesting | 2 | 1 | 0 | 1 |
+| Backtesting | 2 | 0 | 0 | 2 |
 | UI / Dashboard | 2 | 2 | 0 | 0 |
 
 ## Execution Order (Recommended)
@@ -504,16 +504,16 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| B1 | Validate historical backtesting engine behavior | Backtest outputs are reproducible on known data | Backtest tests pass for basic and edge-case datasets | Not Started |
+| B1 | Validate historical backtesting engine behavior | Backtest outputs are reproducible on known data | Backtest tests pass for basic and edge-case datasets | Done |
 | B2 | Expose backtest summaries through CLI and API workflows | Backtest summaries are visible in user-facing outputs | Workflow tests confirm summary artifacts are produced | Done |
 
 B1 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| B1-T1 | Review backtest assumptions and required inputs | `backtesting/backtest_engine.py` | Assumptions documented against the current implementation | Not Started |
-| B1-T2 | Add deterministic data fixtures for backtest validation | `tests/test_backtest_engine.py` | Known input produces stable backtest output | Not Started |
-| B1-T3 | Add edge-case tests for empty and partial histories | `tests/test_backtest_engine.py` | Tests confirm graceful handling of sparse data | Not Started |
+| B1-T1 | Review backtest assumptions and required inputs | `backtesting/backtest_engine.py` | Assumptions documented against the current implementation | Done |
+| B1-T2 | Add deterministic data fixtures for backtest validation | `tests/test_backtest_engine.py` | Known input produces stable backtest output | Done |
+| B1-T3 | Add edge-case tests for empty and partial histories | `tests/test_backtest_engine.py` | Tests confirm graceful handling of sparse data | Done |
 
 B2 Task List:
 

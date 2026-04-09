@@ -29,6 +29,7 @@ Recent updates:
 - C2 doc alignment now includes runtime contract audit notes and test-backed doc validation checks
 - O1 observability now documents structured stage logs with stage, category, and symbol-scope metadata
 - O2 observability now documents execution-ID traceability in analytics logs and `/metrics` snapshots
+- B1 backtesting now includes deterministic fixture validation and sparse-history edge-case coverage in engine tests
 
 **Operations:**
 - [API Server Guide](api-server.md) — deployment and HTTP usage

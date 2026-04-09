@@ -68,6 +68,7 @@ This document tracks feature-level progress and remaining product milestones. It
 - [x] Added backtesting validation against historical NEPSE data and exposed summary results via API and CLI.
 - [x] Enforced a single source of truth for blue-chip score access and ranking merge semantics across detector, workflows, and ranking modules.
 - [x] Added ranking explainability fields (`trade_score_breakdown`, `ranking_rationale`) and comparison fields (`trade_score_rank`, `confidence_rank`, `bluechip_rank`, `relative_trade_score`) in ranked opportunity outputs.
+- [x] Completed B1 backtest engine validation with deterministic fixtures and sparse-history edge-case coverage.
 
 ### reliability
 - [x] Strengthened API, service, and CLI input validation for symbol, date, and pagination inputs.

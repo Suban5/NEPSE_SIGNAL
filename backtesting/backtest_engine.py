@@ -36,11 +36,20 @@ def run_backtest(df: pd.DataFrame, signal_column: str = "signal") -> BacktestRes
     - BUY means hold from next day until SELL.
     - SELL means move to cash.
     - HOLD preserves current position.
+    - Required columns: date, close, and signal_column.
+    - Invalid/missing date or close rows are dropped before metric computation.
     """
-    if df.empty or signal_column not in df.columns or "close" not in df.columns:
+    required_columns = {"date", "close", signal_column}
+    if df.empty or not required_columns.issubset(df.columns):
         return BacktestResult(cagr=0.0, max_drawdown=0.0, win_rate=0.0, sharpe_ratio=0.0)
 
-    out = df.copy().sort_values("date").reset_index(drop=True)
+    out = df.copy()
+    out["date"] = pd.to_datetime(out["date"], errors="coerce")
+    out["close"] = pd.to_numeric(out["close"], errors="coerce")
+    out = out.dropna(subset=["date", "close"]).sort_values("date").reset_index(drop=True)
+    if out.empty:
+        return BacktestResult(cagr=0.0, max_drawdown=0.0, win_rate=0.0, sharpe_ratio=0.0)
+
     out["returns"] = out["close"].pct_change().fillna(0.0)
 
     position = 0
@@ -94,9 +103,17 @@ def run_portfolio_backtest(
         lookback_days: Number of trailing trading days to evaluate.
         rebalance: Rebalance mode: static, weekly, monthly.
 
+    Assumptions:
+        - lookback_days must be >= 1.
+        - Each symbol history must include date and close columns.
+        - Invalid/non-numeric close values are dropped before return computation.
+
     Returns:
         PortfolioBacktestResult with return and risk metrics.
     """
+    if lookback_days < 1:
+        raise ValueError("lookback_days must be >= 1")
+
     if not selected_symbols:
         return PortfolioBacktestResult(
             symbols_count=0,
@@ -111,8 +128,12 @@ def run_portfolio_backtest(
         history = historical_universe.get(symbol)
         if history is None or history.empty:
             continue
+        required_columns = {"date", "close"}
+        if not required_columns.issubset(history.columns):
+            continue
         frame = history[["date", "close"]].copy().sort_values("date")
         frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+        frame["close"] = pd.to_numeric(frame["close"], errors="coerce")
         frame = frame.dropna(subset=["date", "close"]).tail(lookback_days)
         if len(frame) < 2:
             continue
