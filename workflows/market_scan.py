@@ -89,22 +89,88 @@ def run_market_scan_workflow(
         execution_id=execution_id,
         workflow_name="market_scan",
     )
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="stage_completed",
+        stage="fetch",
+        category="success",
+        symbol_scope={
+            "snapshot_rows": int(len(snapshot)),
+            "historical_symbols": int(len(historical_universe)),
+        },
+    )
+
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="stage_started",
+        stage="scan",
+        symbol_scope={"historical_symbols": int(len(historical_universe))},
+    )
     try:
         symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
     except Exception as exc:
-        raise classify_workflow_exception("market_scan", "scan", exc) from exc
+        failure = classify_workflow_exception("market_scan", "scan", exc)
+        log_workflow_event(
+            workflow="market_scan",
+            execution_id=execution_id,
+            event="stage_failed",
+            level=40,
+            stage=failure.stage,
+            category=failure.category,
+            symbol_scope={"historical_symbols": int(len(historical_universe))},
+            error_type=exc.__class__.__name__,
+            message=str(exc),
+        )
+        raise failure from exc
     fetch_elapsed = time.perf_counter() - fetch_started
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="stage_completed",
+        stage="scan",
+        category="success",
+        symbol_scope={"candidate_symbols": int(len(symbols))},
+    )
     if not symbols:
         raise WorkflowDataError("market_scan", "scan", "No symbols passed market universe filters.")
 
     score_started = time.perf_counter()
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="stage_started",
+        stage="score",
+        symbol_scope={"candidate_symbols": int(len(symbols))},
+    )
     try:
         fundamentals_map = build_fundamentals_map(dependencies.coordinator, symbols)
         features = dependencies.detector.build_feature_table(snapshot, filtered_history, fundamentals=fundamentals_map)
         bluechip_ranked = dependencies.detector.score_bluechips(features)
     except Exception as exc:
-        raise classify_workflow_exception("market_scan", "score", exc) from exc
+        failure = classify_workflow_exception("market_scan", "score", exc)
+        log_workflow_event(
+            workflow="market_scan",
+            execution_id=execution_id,
+            event="stage_failed",
+            level=40,
+            stage=failure.stage,
+            category=failure.category,
+            symbol_scope={"candidate_symbols": int(len(symbols))},
+            error_type=exc.__class__.__name__,
+            message=str(exc),
+        )
+        raise failure from exc
     score_elapsed = time.perf_counter() - score_started
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="stage_completed",
+        stage="score",
+        category="success",
+        symbol_scope={"scored_symbols": int(len(bluechip_ranked))},
+    )
     if bluechip_ranked.empty:
         raise WorkflowRankingError("market_scan", "score", "No stocks qualified for blue-chip scoring.")
 
@@ -127,6 +193,13 @@ def run_market_scan_workflow(
     signal_elapsed = time.perf_counter() - signal_started
 
     rank_started = time.perf_counter()
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="stage_started",
+        stage="rank",
+        symbol_scope={"selected_symbols": int(len(selected_symbols))},
+    )
     try:
         signal_df = dependencies.rank_opportunities_fn(pd.DataFrame(signal_rows))
         views = build_ranked_views_cached(
@@ -135,8 +208,31 @@ def run_market_scan_workflow(
             build_ranked_views_fn=dependencies.build_ranked_views_fn,
         )
     except Exception as exc:
-        raise classify_workflow_exception("market_scan", "rank", exc) from exc
+        failure = classify_workflow_exception("market_scan", "rank", exc)
+        log_workflow_event(
+            workflow="market_scan",
+            execution_id=execution_id,
+            event="stage_failed",
+            level=40,
+            stage=failure.stage,
+            category=failure.category,
+            symbol_scope={"selected_symbols": int(len(selected_symbols))},
+            error_type=exc.__class__.__name__,
+            message=str(exc),
+        )
+        raise failure from exc
     rank_elapsed = time.perf_counter() - rank_started
+    log_workflow_event(
+        workflow="market_scan",
+        execution_id=execution_id,
+        event="stage_completed",
+        stage="rank",
+        category="success",
+        symbol_scope={
+            "selected_symbols": int(len(selected_symbols)),
+            "ranked_rows": int(len(signal_df)),
+        },
+    )
 
     save_started = time.perf_counter()
     try:

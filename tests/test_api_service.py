@@ -362,6 +362,57 @@ def test_analytics_backtest_summary_returns_cached_payload(monkeypatch: pytest.M
     assert second == first
 
 
+def test_analytics_service_logs_structured_stage_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Analytics service should emit structured stage logs with category and symbol scope."""
+    service = _build_service(SimpleNamespace())
+    monkeypatch.setattr(
+        api_service_module,
+        "get_settings",
+        lambda: SimpleNamespace(data_cache_path=tmp_path, api_retry_attempts=1, api_retry_backoff_seconds=0.0),
+    )
+    monkeypatch.setattr(api_service_module, "BlueChipDetector", lambda config=None: SimpleNamespace())
+    monkeypatch.setattr(api_service_module, "MarketScanner", lambda: SimpleNamespace())
+
+    fake_context = SimpleNamespace(
+        execution_id="scan-log001",
+        bluechip_ranked=pd.DataFrame([{"symbol": "NABIL", "bluechip_score": 0.91}]),
+        signal_df=pd.DataFrame([
+            {
+                "symbol": "NABIL",
+                "signal": "BUY",
+                "confidence": 0.82,
+                "bluechip_score": 0.91,
+                "trade_score": 0.77,
+            }
+        ]),
+        to_summary=lambda: {
+            "workflow": "market_scan",
+            "execution_id": "scan-log001",
+            "output_dir": str(tmp_path / "api" / "analytics" / "scan_top_20_sector_0"),
+            "top_n": 20,
+            "plot": False,
+            "snapshot_rows": 10,
+            "universe_symbols": 8,
+            "selected_symbols": 5,
+            "signal_rows": 5,
+        },
+    )
+    monkeypatch.setattr(api_service_module, "run_market_scan_workflow", lambda **_: fake_context)
+
+    with caplog.at_level("INFO"):
+        service.analytics_opportunities(top_n=20, sector_relative=False)
+
+    assert '"event": "analytics_stage"' in caplog.text
+    assert '"endpoint": "analytics_opportunities"' in caplog.text
+    assert '"stage": "rank"' in caplog.text
+    assert '"category": "success"' in caplog.text
+    assert '"symbol_scope"' in caplog.text
+
+
 def test_call_cached_reuses_cached_result(monkeypatch: pytest.MonkeyPatch) -> None:
     """Cached service calls should avoid repeated upstream method invocations."""
     service = _build_service(SimpleNamespace())

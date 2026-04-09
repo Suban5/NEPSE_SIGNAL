@@ -374,11 +374,22 @@ def test_market_backtest_workflow_rejects_buy_symbols_without_sufficient_history
         ["AAA"],
         {"AAA": _build_history("AAA", 100.0).head(1).copy()},
     )
-    dependencies.detector.build_feature_table = lambda snapshot, filtered_history, fundamentals: pd.DataFrame(
-        {"symbol": ["AAA"], "bluechip_score": [0.91]}
-    )
+
+    def _build_feature_table_override(
+        market_snapshot: pd.DataFrame,
+        historical_data: dict[str, pd.DataFrame],
+        fundamentals: dict[str, dict[object, object]] | None = None,
+    ) -> pd.DataFrame:
+        del market_snapshot, historical_data, fundamentals
+        return pd.DataFrame({"symbol": ["AAA"], "bluechip_score": [0.91]})
+
+    def _select_top_symbols_override(scored: pd.DataFrame, top_n: int) -> list[str]:
+        del scored, top_n
+        return ["AAA"]
+
+    dependencies.detector.build_feature_table = _build_feature_table_override
     dependencies.detector.score_bluechips = lambda features: features
-    dependencies.detector.select_top_symbols = lambda ranked, top_n: ["AAA"]
+    dependencies.detector.select_top_symbols = _select_top_symbols_override
 
     with pytest.raises(WorkflowDataError, match="No BUY symbols have sufficient historical rows for backtest window."):
         run_market_backtest_workflow(dependencies, tmp_path, top_n=1, lookback_days=20, rebalance="static")
@@ -670,3 +681,88 @@ def test_fetch_historical_universe_classifies_validation_errors() -> None:
         )
 
     assert exc_info.value.stage == "fetch"
+
+
+def test_market_scan_workflow_logs_stage_completion_metadata(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """Market scan should emit structured stage completion logs with symbol scope metadata."""
+    dependencies = MarketScanDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame.assign(
+            sma20=frame["close"],
+            sma50=frame["close"],
+            sma200=frame["close"],
+            ema20=frame["close"],
+            rsi14=50.0,
+            macd=0.1,
+            macd_signal=0.05,
+            bb_upper=frame["close"] + 2,
+            bb_lower=frame["close"] - 2,
+            volume_sma20=frame["volume"],
+            volume_trend=1.0,
+        ),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda df: df,
+        build_ranked_views_fn=lambda bc, sig: {
+            "top_bluechips": bc,
+            "best_buy_signals": sig,
+            "strong_momentum": sig,
+            "high_risk_weak": sig,
+        },
+    )
+
+    with caplog.at_level("INFO"):
+        run_market_scan_workflow(dependencies, tmp_path, top_n=2, plot=False)
+
+    assert '"event": "stage_completed"' in caplog.text
+    assert '"stage": "fetch"' in caplog.text
+    assert '"stage": "scan"' in caplog.text
+    assert '"stage": "score"' in caplog.text
+    assert '"stage": "rank"' in caplog.text
+    assert '"symbol_scope"' in caplog.text
+
+
+def test_market_scan_workflow_logs_stage_failure_metadata(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """Market scan should emit structured stage failure logs with category and symbol scope."""
+    dependencies = MarketScanDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame.assign(
+            sma20=frame["close"],
+            sma50=frame["close"],
+            sma200=frame["close"],
+            ema20=frame["close"],
+            rsi14=50.0,
+            macd=0.1,
+            macd_signal=0.05,
+            bb_upper=frame["close"] + 2,
+            bb_lower=frame["close"] - 2,
+            volume_sma20=frame["volume"],
+            volume_trend=1.0,
+        ),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda _df: (_ for _ in ()).throw(RuntimeError("ranking exploded")),
+        build_ranked_views_fn=lambda bc, sig: {
+            "top_bluechips": bc,
+            "best_buy_signals": sig,
+            "strong_momentum": sig,
+            "high_risk_weak": sig,
+        },
+    )
+
+    with caplog.at_level("INFO"):
+        with pytest.raises(WorkflowRankingError):
+            run_market_scan_workflow(dependencies, tmp_path, top_n=2, plot=False)
+
+    assert '"event": "stage_failed"' in caplog.text
+    assert '"stage": "rank"' in caplog.text
+    assert '"category": "ranking"' in caplog.text
+    assert '"symbol_scope"' in caplog.text

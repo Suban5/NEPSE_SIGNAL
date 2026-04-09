@@ -147,6 +147,13 @@ U2 explainability contract:
 ### Observability
 - GET /metrics -> RequestMetricsResponse
 
+O1 structured logging schema (workflow and analytics service events):
+
+- `event`: event identifier (`stage_started`, `stage_completed`, `stage_failed`, `analytics_stage`)
+- `stage`: pipeline stage (`fetch`, `scan`, `score`, `rank`, etc.)
+- `category`: `success` or classified failure category (`validation`, `data`, `upstream`, `ranking`)
+- `symbol_scope`: stage-specific symbol/row counts for context
+
 ### Contract Metadata
 - GET /contracts -> ApiContractResponse
 

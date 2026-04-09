@@ -47,6 +47,10 @@ Observability:
 - `MarketScanContext.execution_id` provides per-run correlation ID
 - `scan_benchmark.json` includes the same `execution_id`
 - structured events are logged with workflow, execution_id, and event fields
+- fetch/scan/score/rank stages emit structured events with:
+  - `stage`
+  - `category` (`success` or failure category)
+  - `symbol_scope` (stage-specific row/symbol counts)
 
 ## Market Backtest Workflow
 
@@ -84,6 +88,10 @@ Observability:
 - `MarketBacktestContext.execution_id` provides per-run correlation ID
 - `backtest_benchmark.json` includes the same `execution_id`
 - structured events are logged with workflow, execution_id, and event fields
+- fetch/scan/score/rank stages emit structured events with:
+  - `stage`
+  - `category` (`success` or failure category)
+  - `symbol_scope` (candidate/selected/buy symbol scope)
 
 ## Symbol Analysis Workflow
 
@@ -220,3 +228,4 @@ Workflow and service layer contracts are validated by:
   - validate error mapping (classification metadata exposure)
   - validate timeout handling (504 UPSTREAM_TIMEOUT)
   - validate analytics response contracts with timeout wrapper
+  - validate structured stage observability log metadata for analytics service paths

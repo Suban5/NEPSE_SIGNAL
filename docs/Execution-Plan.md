@@ -24,7 +24,7 @@ This document is a planning template for future implementation work. It is inten
 | Usability | 2 | 0 | 0 | 2 |
 | Scalability | 2 | 2 | 0 | 0 |
 | Technical Debt | 2 | 0 | 0 | 2 |
-| Observability | 2 | 2 | 0 | 0 |
+| Observability | 2 | 1 | 0 | 1 |
 | Versioning and Contracts | 2 | 0 | 0 | 2 |
 | Backtesting | 2 | 1 | 0 | 1 |
 | UI / Dashboard | 2 | 2 | 0 | 0 |
@@ -370,16 +370,16 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| O1 | Add structured logging for fetch, scan, and ranking stages | Each stage emits structured logs with useful context | Log output includes stage, symbol scope, and failure category | Not Started |
+| O1 | Add structured logging for fetch, scan, and ranking stages | Each stage emits structured logs with useful context | Log output includes stage, symbol scope, and failure category | Done |
 | O2 | Add execution IDs to workflow runs | A run can be traced end-to-end through logs and metrics | Tests or smoke runs confirm a stable execution identifier is emitted | Not Started |
 
 O1 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| O1-T1 | Define the structured logging fields for pipeline stages | `api/app.py`, `api/telemetry.py`, `workflows/*.py` | Logging schema documented for each stage | Not Started |
-| O1-T2 | Add structured logs to fetch, scan, score, and rank code paths | `api/service.py`, `workflows/*.py` | Logs include stage, symbol, and failure category | Not Started |
-| O1-T3 | Confirm logs remain readable and low-noise | `tests/test_api_app.py`, `tests/test_workflows.py` | Smoke checks verify expected log shape | Not Started |
+| O1-T1 | Define the structured logging fields for pipeline stages | `api/app.py`, `api/telemetry.py`, `workflows/*.py` | Logging schema documented for each stage | Done |
+| O1-T2 | Add structured logs to fetch, scan, score, and rank code paths | `api/service.py`, `workflows/*.py` | Logs include stage, symbol, and failure category | Done |
+| O1-T3 | Confirm logs remain readable and low-noise | `tests/test_api_app.py`, `tests/test_workflows.py` | Smoke checks verify expected log shape | Done |
 
 O2 Task List:
 

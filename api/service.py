@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 from pathlib import Path
+import json
+import logging
 import time
 from typing import Any, Dict, List, Optional, cast
 
@@ -24,6 +26,9 @@ from signals.signal_engine import build_trade_signal
 from workflows.context import validate_positive_int, validate_symbol
 from workflows.market_scan import MarketScanDependencies, run_market_scan_workflow
 from workflows.market_backtest import MarketBacktestDependencies, run_market_backtest_workflow
+
+
+observability_logger = logging.getLogger("api.observability")
 
 
 class NepseApiService:
@@ -287,26 +292,101 @@ class NepseApiService:
         self._caches["analytics_scan"].set(cache_key, payload)
         return payload
 
+    @staticmethod
+    def _log_analytics_event(
+        endpoint: str,
+        stage: str,
+        category: str,
+        symbol_scope: Dict[str, Any],
+        **fields: Any,
+    ) -> None:
+        """Emit structured observability events for analytics service paths."""
+        observability_logger.info(
+            json.dumps(
+                {
+                    "event": "analytics_stage",
+                    "endpoint": endpoint,
+                    "stage": stage,
+                    "category": category,
+                    "symbol_scope": symbol_scope,
+                    **fields,
+                },
+                default=str,
+                sort_keys=True,
+            )
+        )
+
     def analytics_bluechip_ranking(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
         """Return workflow-backed blue-chip ranking output."""
-        return self._build_analytics_response(
-            self._analytics_payload(top_n=top_n, sector_relative=sector_relative),
-            "bluechip_ranking",
-        )
+        try:
+            payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
+            response = self._build_analytics_response(payload, "bluechip_ranking")
+            self._log_analytics_event(
+                endpoint="analytics_bluechip_ranking",
+                stage="rank",
+                category="success",
+                symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
+                sector_relative=bool(response["sector_relative"]),
+            )
+            return response
+        except Exception as exc:
+            self._log_analytics_event(
+                endpoint="analytics_bluechip_ranking",
+                stage=str(getattr(exc, "stage", "rank")),
+                category=str(getattr(exc, "category", "failure")),
+                symbol_scope={"top_n": int(top_n)},
+                error_type=exc.__class__.__name__,
+                message=str(exc),
+            )
+            raise
 
     def analytics_opportunities(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
         """Return workflow-backed ranked opportunities output."""
-        return self._build_analytics_response(
-            self._analytics_payload(top_n=top_n, sector_relative=sector_relative),
-            "opportunities",
-        )
+        try:
+            payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
+            response = self._build_analytics_response(payload, "opportunities")
+            self._log_analytics_event(
+                endpoint="analytics_opportunities",
+                stage="rank",
+                category="success",
+                symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
+                sector_relative=bool(response["sector_relative"]),
+            )
+            return response
+        except Exception as exc:
+            self._log_analytics_event(
+                endpoint="analytics_opportunities",
+                stage=str(getattr(exc, "stage", "rank")),
+                category=str(getattr(exc, "category", "failure")),
+                symbol_scope={"top_n": int(top_n)},
+                error_type=exc.__class__.__name__,
+                message=str(exc),
+            )
+            raise
 
     def analytics_signal_summary(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
         """Return workflow-backed signal summary output."""
-        return self._build_analytics_response(
-            self._analytics_payload(top_n=top_n, sector_relative=sector_relative),
-            "signal_summary",
-        )
+        try:
+            payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
+            response = self._build_analytics_response(payload, "signal_summary")
+            self._log_analytics_event(
+                endpoint="analytics_signal_summary",
+                stage="rank",
+                category="success",
+                symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
+                sector_relative=bool(response["sector_relative"]),
+            )
+            return response
+        except Exception as exc:
+            self._log_analytics_event(
+                endpoint="analytics_signal_summary",
+                stage=str(getattr(exc, "stage", "rank")),
+                category=str(getattr(exc, "category", "failure")),
+                symbol_scope={"top_n": int(top_n)},
+                error_type=exc.__class__.__name__,
+                message=str(exc),
+            )
+            raise
 
     def analytics_backtest_summary(
         self,
@@ -330,6 +410,16 @@ class NepseApiService:
         )
         cached_payload = self._caches["analytics_backtest"].get(cache_key)
         if isinstance(cached_payload, dict):
+            self._log_analytics_event(
+                endpoint="analytics_backtest_summary",
+                stage="rank",
+                category="success",
+                symbol_scope={
+                    "top_n": int(cached_payload.get("top_n", normalized_top_n)),
+                    "validated_symbols": int(cached_payload.get("historical_validation", {}).get("validated_symbols", 0)),
+                },
+                cache_hit=True,
+            )
             return cached_payload
 
         output_dir = self._analytics_output_dir() / (
@@ -339,21 +429,32 @@ class NepseApiService:
             f"_sector_{int(normalized_sector_relative)}"
         )
         detector = BlueChipDetector(config=BlueChipScoringConfig(sector_relative=normalized_sector_relative))
-        context = run_market_backtest_workflow(
-            dependencies=MarketBacktestDependencies(
-                coordinator=self._coordinator,
-                scanner=MarketScanner(),
-                detector=detector,
-                add_indicators_fn=add_indicators,
-                detect_patterns_fn=detect_patterns,
-                build_trade_signal_fn=build_trade_signal,
-                rank_opportunities_fn=rank_opportunities,
-            ),
-            output_dir=output_dir,
-            top_n=normalized_top_n,
-            lookback_days=normalized_lookback_days,
-            rebalance=normalized_rebalance,
-        )
+        try:
+            context = run_market_backtest_workflow(
+                dependencies=MarketBacktestDependencies(
+                    coordinator=self._coordinator,
+                    scanner=MarketScanner(),
+                    detector=detector,
+                    add_indicators_fn=add_indicators,
+                    detect_patterns_fn=detect_patterns,
+                    build_trade_signal_fn=build_trade_signal,
+                    rank_opportunities_fn=rank_opportunities,
+                ),
+                output_dir=output_dir,
+                top_n=normalized_top_n,
+                lookback_days=normalized_lookback_days,
+                rebalance=normalized_rebalance,
+            )
+        except Exception as exc:
+            self._log_analytics_event(
+                endpoint="analytics_backtest_summary",
+                stage=str(getattr(exc, "stage", "rank")),
+                category=str(getattr(exc, "category", "failure")),
+                symbol_scope={"top_n": int(normalized_top_n)},
+                error_type=exc.__class__.__name__,
+                message=str(exc),
+            )
+            raise
 
         payload = {
             "top_n": normalized_top_n,
@@ -366,6 +467,16 @@ class NepseApiService:
             "portfolio_metrics": context.portfolio_metrics,
         }
         self._caches["analytics_backtest"].set(cache_key, payload)
+        self._log_analytics_event(
+            endpoint="analytics_backtest_summary",
+            stage="rank",
+            category="success",
+            symbol_scope={
+                "top_n": int(payload.get("top_n", normalized_top_n)),
+                "validated_symbols": int(payload.get("historical_validation", {}).get("validated_symbols", 0)),
+            },
+            cache_hit=False,
+        )
         return payload
 
     def build_bluechip_ranking_response(
