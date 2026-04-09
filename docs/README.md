@@ -26,6 +26,7 @@ Recent updates:
 - U1 output standardization is documented with explicit field inventories across API analytics responses, workflow summaries, and CLI summary logs
 - U2 scoring explainability is documented with minimum score-breakdown fields, rationale fields, and comparison-friendly ranking fields
 - C1 versioning now documents header-negotiated v1/v2 behavior with additive `v2` analytics contract metadata
+- C2 doc alignment now includes runtime contract audit notes and test-backed doc validation checks
 
 **Operations:**
 - [API Server Guide](api-server.md) — deployment and HTTP usage

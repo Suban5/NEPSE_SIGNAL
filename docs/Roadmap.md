@@ -53,6 +53,7 @@ This document tracks feature-level progress and remaining product milestones. It
 - [x] Standardized analytics response assembly in `api/service.py`.
 - [x] Standardized analytics top-level response fields across scan routes (`top_n`, `sector_relative`, `execution_id`, `summary`, `rows`).
 - [x] Added header-negotiated response versioning rules and additive `v2` analytics contract metadata.
+- [x] Completed C2 contract documentation alignment with runtime routes/models and added doc-validation coverage.
 
 ### cli
 - [x] Preserved CLI workflow commands with shared dependency wiring.

@@ -219,3 +219,19 @@ Example:
 
 - Route behavior and schema: tests/test_api_app.py
 - Service retry and error classification: tests/test_api_service.py
+
+## C2 Doc Alignment Review
+
+Doc-to-code review status (2026-04-09):
+
+- Checked endpoint inventory in this file against route decorators in `api/app.py`
+- Checked response model references against `api/models.py`
+- Checked versioning metadata contract fields against `/contracts` response behavior
+
+Actionable mismatches:
+
+- None currently identified
+
+Ongoing validation:
+
+- `tests/test_api_app.py` includes doc alignment assertions for key endpoint and model references in this file

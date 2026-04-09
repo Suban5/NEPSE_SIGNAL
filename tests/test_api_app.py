@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from concurrent.futures import TimeoutError as FutureTimeoutError
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -290,6 +291,38 @@ def test_openapi_exposes_contract_models() -> None:
     assert "AnalyticsBluechipRankingResponse" in schemas
     assert "AnalyticsBacktestSummaryResponse" in schemas
     assert "WorkflowSummary" in schemas
+
+
+def test_contract_docs_reference_runtime_endpoints_and_models() -> None:
+    """Contract docs should reference runtime API routes and core models."""
+    repo_root = Path(__file__).resolve().parents[1]
+    contracts_doc = (repo_root / "docs" / "api-contracts.md").read_text(encoding="utf-8")
+    api_server_doc = (repo_root / "docs" / "api-server.md").read_text(encoding="utf-8")
+
+    required_endpoints = [
+        "/health",
+        "/market/status",
+        "/analytics/bluechip-ranking",
+        "/analytics/opportunities",
+        "/analytics/signal-summary",
+        "/analytics/backtest-summary",
+        "/contracts",
+    ]
+    for endpoint in required_endpoints:
+        assert endpoint in contracts_doc
+
+    required_models = [
+        "ApiContractResponse",
+        "AnalyticsBluechipRankingResponse",
+        "AnalyticsOpportunitiesResponse",
+        "AnalyticsSignalSummaryResponse",
+        "AnalyticsBacktestSummaryResponse",
+    ]
+    for model_name in required_models:
+        assert model_name in contracts_doc
+
+    assert "X-API-Version" in contracts_doc
+    assert "X-API-Version" in api_server_doc
 
 
 def test_metrics_endpoint_returns_snapshot() -> None:

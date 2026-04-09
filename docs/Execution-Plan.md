@@ -25,7 +25,7 @@ This document is a planning template for future implementation work. It is inten
 | Scalability | 2 | 2 | 0 | 0 |
 | Technical Debt | 2 | 0 | 0 | 2 |
 | Observability | 2 | 2 | 0 | 0 |
-| Versioning and Contracts | 2 | 1 | 0 | 1 |
+| Versioning and Contracts | 2 | 0 | 0 | 2 |
 | Backtesting | 2 | 1 | 0 | 1 |
 | UI / Dashboard | 2 | 2 | 0 | 0 |
 
@@ -438,7 +438,7 @@ Milestones:
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
 | C1 | Define versioned API response behavior | Versioning rules are documented and supported in code | API tests verify version negotiation or versioned routes | Done |
-| C2 | Keep docs aligned with API contracts | Contract docs match runtime models and routes | Documentation review matches `api/app.py` and `api/models.py` | Not Started |
+| C2 | Keep docs aligned with API contracts | Contract docs match runtime models and routes | Documentation review matches `api/app.py` and `api/models.py` | Done |
 
 C1 Task List:
 
@@ -452,9 +452,9 @@ C2 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| C2-T1 | Review current docs against runtime API models | `docs/api-contracts.md`, `docs/api-server.md`, `api/models.py` | Doc-to-code mismatches are listed and actionable | Not Started |
-| C2-T2 | Update contract docs to reflect actual models and endpoints | `docs/api-contracts.md`, `docs/api-server.md` | Docs match the current API surface | Not Started |
-| C2-T3 | Add doc validation checks to roadmap criteria | `docs/*.md`, `tests/test_api_app.py` | Contract docs are referenced in review and validation | Not Started |
+| C2-T1 | Review current docs against runtime API models | `docs/api-contracts.md`, `docs/api-server.md`, `api/models.py` | Doc-to-code mismatches are listed and actionable | Done |
+| C2-T2 | Update contract docs to reflect actual models and endpoints | `docs/api-contracts.md`, `docs/api-server.md` | Docs match the current API surface | Done |
+| C2-T3 | Add doc validation checks to roadmap criteria | `docs/*.md`, `tests/test_api_app.py` | Contract docs are referenced in review and validation | Done |
 
 Assumptions:
 
