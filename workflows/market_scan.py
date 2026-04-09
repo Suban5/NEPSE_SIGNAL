@@ -146,6 +146,18 @@ def run_market_scan_workflow(
     log_ranked_summary(views, execution_id=execution_id, workflow_name="market_scan")
 
     total_elapsed = time.perf_counter() - started_at
+    context = MarketScanContext(
+        output_dir=output_dir,
+        top_n=top_n,
+        plot=plot,
+        execution_id=execution_id,
+        snapshot=snapshot,
+        historical_universe=historical_universe,
+        symbols=symbols,
+        filtered_history=filtered_history,
+        bluechip_ranked=bluechip_ranked,
+        signal_df=signal_df,
+    )
     write_benchmark_snapshot(
         output_dir=output_dir,
         file_name="scan_benchmark.json",
@@ -166,6 +178,7 @@ def run_market_scan_workflow(
                 "top_n": int(top_n),
                 "plot": bool(plot),
             },
+            "summary": context.to_summary(),
         },
     )
     log_workflow_event(
@@ -177,15 +190,4 @@ def run_market_scan_workflow(
         selected_symbols=int(len(selected_symbols)),
     )
 
-    return MarketScanContext(
-        output_dir=output_dir,
-        top_n=top_n,
-        plot=plot,
-        execution_id=execution_id,
-        snapshot=snapshot,
-        historical_universe=historical_universe,
-        symbols=symbols,
-        filtered_history=filtered_history,
-        bluechip_ranked=bluechip_ranked,
-        signal_df=signal_df,
-    )
+    return context

@@ -154,6 +154,20 @@ def run_market_backtest_workflow(
     }
 
     total_elapsed = time.perf_counter() - started_at
+    context = MarketBacktestContext(
+        output_dir=output_dir,
+        top_n=top_n,
+        lookback_days=lookback_days,
+        rebalance=rebalance,
+        execution_id=execution_id,
+        snapshot=snapshot,
+        historical_universe=historical_universe,
+        symbols=symbols,
+        filtered_history=filtered_history,
+        bluechip_ranked=bluechip_ranked,
+        signal_df=signal_df,
+        selected_buy_symbols=buy_symbols,
+    )
     write_benchmark_snapshot(
         output_dir=output_dir,
         file_name="backtest_benchmark.json",
@@ -176,6 +190,7 @@ def run_market_backtest_workflow(
                 "lookback_days": int(lookback_days),
                 "rebalance": rebalance,
             },
+            "summary": context.to_summary(),
         },
     )
     log_workflow_event(
@@ -193,17 +208,4 @@ def run_market_backtest_workflow(
     except Exception as exc:
         raise classify_workflow_exception("market_backtest", "persist", exc) from exc
 
-    return MarketBacktestContext(
-        output_dir=output_dir,
-        top_n=top_n,
-        lookback_days=lookback_days,
-        rebalance=rebalance,
-        execution_id=execution_id,
-        snapshot=snapshot,
-        historical_universe=historical_universe,
-        symbols=symbols,
-        filtered_history=filtered_history,
-        bluechip_ranked=bluechip_ranked,
-        signal_df=signal_df,
-        selected_buy_symbols=buy_symbols,
-    )
+    return context

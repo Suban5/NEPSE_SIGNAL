@@ -114,8 +114,11 @@ def test_market_scan_workflow_writes_outputs(tmp_path: Path) -> None:
     assert isinstance(context.execution_id, str)
     assert context.execution_id
     assert benchmark_payload.get("execution_id") == context.execution_id
+    assert benchmark_payload.get("summary") == context.to_summary()
     assert "timings" in benchmark_payload
     assert "total_seconds" in benchmark_payload
+    assert context.to_summary()["workflow"] == "market_scan"
+    assert context.to_summary()["selected_symbols"] == 2
 
 
 def test_market_scan_workflow_classifies_empty_scan(tmp_path: Path) -> None:
@@ -227,8 +230,11 @@ def test_market_backtest_workflow_writes_outputs(tmp_path: Path) -> None:
     assert isinstance(context.execution_id, str)
     assert context.execution_id
     assert benchmark_payload.get("execution_id") == context.execution_id
+    assert benchmark_payload.get("summary") == context.to_summary()
     assert "timings" in benchmark_payload
     assert "total_seconds" in benchmark_payload
+    assert context.to_summary()["workflow"] == "market_backtest"
+    assert context.to_summary()["buy_symbols"] == len(context.selected_buy_symbols)
 
 
 def test_symbol_analysis_workflow_returns_context() -> None:
@@ -263,6 +269,10 @@ def test_symbol_analysis_workflow_returns_context() -> None:
     assert context.bluechip_score >= 0.0
     assert context.signal.signal == "BUY"
     assert context.backtest is not None
+    summary = context.to_summary()
+    assert summary["workflow"] == "symbol_analysis"
+    assert summary["symbol"] == "AAA"
+    assert summary["signal"] == "BUY"
 
 
 def test_build_fundamentals_map_stops_after_first_failure() -> None:

@@ -103,6 +103,30 @@ class RequestMetricsResponse(BaseModel):
     cache_stats: Dict[str, Dict[str, int]]
 
 
+class WorkflowSummary(BaseModel):
+    """Standardized workflow summary shared across CLI, workflow, and API outputs."""
+
+    workflow: str
+    execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    output_dir: Optional[str] = None
+    top_n: Optional[int] = None
+    plot: Optional[bool] = None
+    lookback_days: Optional[int] = None
+    rebalance: Optional[str] = None
+    snapshot_rows: Optional[int] = None
+    universe_symbols: Optional[int] = None
+    selected_symbols: Optional[int] = None
+    buy_symbols: Optional[int] = None
+    signal_rows: Optional[int] = None
+    symbol: Optional[str] = None
+    history_rows: Optional[int] = None
+    bluechip_score: Optional[float] = None
+    signal: Optional[str] = None
+    confidence: Optional[float] = None
+    backtest_cagr: Optional[float] = None
+    backtest_sharpe_ratio: Optional[float] = None
+
+
 class ScoreBreakdown(BaseModel):
     """Detailed breakdown of blue-chip score components with computed ratios."""
 
@@ -173,6 +197,7 @@ class AnalyticsRowsResponse(BaseModel):
     top_n: int
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    summary: Optional[WorkflowSummary] = None
     rows: List[Dict[str, Any]]
 
 
@@ -182,6 +207,7 @@ class AnalyticsBluechipRankingResponse(BaseModel):
     top_n: int
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    summary: Optional[WorkflowSummary] = None
     rows: List[Dict[str, Any]]
 
 
@@ -215,6 +241,7 @@ class AnalyticsOpportunitiesResponse(BaseModel):
     top_n: int
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    summary: Optional[WorkflowSummary] = None
     rows: List[OpportunityRow]
 
 
@@ -224,4 +251,5 @@ class AnalyticsSignalSummaryResponse(BaseModel):
     top_n: int
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
+    summary: Optional[WorkflowSummary] = None
     rows: List[SignalSummaryRow]

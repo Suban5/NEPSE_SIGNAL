@@ -257,6 +257,7 @@ def scan_market(args: argparse.Namespace) -> None:
         force_refresh=bool(getattr(args, "force_refresh", False)),
     )
     logger.info("Market scan completed | execution_id=%s | output_dir=%s", context.execution_id, context.output_dir)
+    logger.info("Workflow summary | %s", json.dumps(context.to_summary(), default=str))
 
 
 def backtest_market(args: argparse.Namespace) -> None:
@@ -282,6 +283,7 @@ def backtest_market(args: argparse.Namespace) -> None:
         force_refresh=bool(getattr(args, "force_refresh", False)),
     )
     logger.info("Market backtest completed | execution_id=%s | output_dir=%s", context.execution_id, context.output_dir)
+    logger.info("Workflow summary | %s", json.dumps(context.to_summary(), default=str))
 
 
 def scan_symbol(args: argparse.Namespace) -> None:
@@ -320,6 +322,7 @@ def scan_symbol(args: argparse.Namespace) -> None:
         context.backtest.sharpe_ratio,
     )
     logger.info("Symbol analysis completed | execution_id=%s", context.execution_id)
+    logger.info("Workflow summary | %s", json.dumps(context.to_summary(), default=str))
 
 
 def health_check(args: argparse.Namespace) -> None:

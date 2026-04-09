@@ -156,6 +156,7 @@ def test_openapi_exposes_contract_models() -> None:
     assert "AnalyticsOpportunitiesResponse" in schemas
     assert "AnalyticsSignalSummaryResponse" in schemas
     assert "AnalyticsBluechipRankingResponse" in schemas
+    assert "WorkflowSummary" in schemas
 
 
 def test_metrics_endpoint_returns_snapshot() -> None:
@@ -189,6 +190,17 @@ def test_analytics_bluechip_ranking_endpoint_returns_rows(monkeypatch) -> None:
             "top_n": top_n,
             "sector_relative": sector_relative,
             "execution_id": "scan-abc123",
+            "summary": {
+                "workflow": "market_scan",
+                "execution_id": "scan-abc123",
+                "output_dir": "output/api/analytics/scan_top_5_sector_1",
+                "top_n": 5,
+                "plot": False,
+                "snapshot_rows": 12,
+                "universe_symbols": 8,
+                "selected_symbols": 5,
+                "signal_rows": 5,
+            },
             "rows": [{"symbol": "NABIL", "bluechip_score": 0.91}],
         }
 
@@ -201,6 +213,8 @@ def test_analytics_bluechip_ranking_endpoint_returns_rows(monkeypatch) -> None:
     assert payload["top_n"] == 5
     assert payload["sector_relative"] is True
     assert payload["execution_id"] == "scan-abc123"
+    assert payload["summary"]["workflow"] == "market_scan"
+    assert payload["summary"]["selected_symbols"] == 5
     assert payload["rows"][0]["symbol"] == "NABIL"
 
 
@@ -212,6 +226,17 @@ def test_analytics_opportunities_endpoint_returns_rows(monkeypatch) -> None:
             "top_n": top_n,
             "sector_relative": sector_relative,
             "execution_id": "scan-def456",
+            "summary": {
+                "workflow": "market_scan",
+                "execution_id": "scan-def456",
+                "output_dir": "output/api/analytics/scan_top_10_sector_0",
+                "top_n": 10,
+                "plot": False,
+                "snapshot_rows": 12,
+                "universe_symbols": 8,
+                "selected_symbols": 5,
+                "signal_rows": 5,
+            },
             "rows": [{"symbol": "SCB", "trade_score": 0.77}],
         }
 
@@ -224,6 +249,7 @@ def test_analytics_opportunities_endpoint_returns_rows(monkeypatch) -> None:
     assert payload["top_n"] == 10
     assert payload["sector_relative"] is False
     assert payload["execution_id"] == "scan-def456"
+    assert payload["summary"]["workflow"] == "market_scan"
     assert payload["rows"][0]["symbol"] == "SCB"
 
 
@@ -235,6 +261,17 @@ def test_analytics_signal_summary_endpoint_returns_rows(monkeypatch) -> None:
             "top_n": top_n,
             "sector_relative": sector_relative,
             "execution_id": "scan-ghi789",
+            "summary": {
+                "workflow": "market_scan",
+                "execution_id": "scan-ghi789",
+                "output_dir": "output/api/analytics/scan_top_8_sector_1",
+                "top_n": 8,
+                "plot": False,
+                "snapshot_rows": 12,
+                "universe_symbols": 8,
+                "selected_symbols": 5,
+                "signal_rows": 5,
+            },
             "rows": [{"symbol": "NICA", "signal": "BUY", "confidence": 0.82}],
         }
 
@@ -247,4 +284,5 @@ def test_analytics_signal_summary_endpoint_returns_rows(monkeypatch) -> None:
     assert payload["top_n"] == 8
     assert payload["sector_relative"] is True
     assert payload["execution_id"] == "scan-ghi789"
+    assert payload["summary"]["workflow"] == "market_scan"
     assert payload["rows"][0]["signal"] == "BUY"

@@ -24,6 +24,20 @@ class MarketScanContext:
     signal_df: pd.DataFrame
     execution_id: str = ""
 
+    def to_summary(self) -> Dict[str, Any]:
+        """Return a standardized summary for CLI and benchmark output."""
+        return {
+            "workflow": "market_scan",
+            "execution_id": self.execution_id,
+            "output_dir": str(self.output_dir),
+            "top_n": int(self.top_n),
+            "plot": bool(self.plot),
+            "snapshot_rows": int(len(self.snapshot)),
+            "universe_symbols": int(len(self.symbols)),
+            "selected_symbols": int(min(self.top_n, len(self.bluechip_ranked))),
+            "signal_rows": int(len(self.signal_df)),
+        }
+
 
 @dataclass(frozen=True)
 class MarketBacktestContext:
@@ -42,6 +56,22 @@ class MarketBacktestContext:
     selected_buy_symbols: List[str]
     execution_id: str = ""
 
+    def to_summary(self) -> Dict[str, Any]:
+        """Return a standardized summary for CLI and benchmark output."""
+        return {
+            "workflow": "market_backtest",
+            "execution_id": self.execution_id,
+            "output_dir": str(self.output_dir),
+            "top_n": int(self.top_n),
+            "lookback_days": int(self.lookback_days),
+            "rebalance": self.rebalance,
+            "snapshot_rows": int(len(self.snapshot)),
+            "universe_symbols": int(len(self.symbols)),
+            "selected_symbols": int(min(self.top_n, len(self.bluechip_ranked))),
+            "buy_symbols": int(len(self.selected_buy_symbols)),
+            "signal_rows": int(len(self.signal_df)),
+        }
+
 
 @dataclass(frozen=True)
 class SymbolAnalysisContext:
@@ -56,6 +86,20 @@ class SymbolAnalysisContext:
     signal: Any
     backtest: Any
     execution_id: str = ""
+
+    def to_summary(self) -> Dict[str, Any]:
+        """Return a standardized summary for CLI output."""
+        return {
+            "workflow": "symbol_analysis",
+            "execution_id": self.execution_id,
+            "symbol": self.symbol,
+            "history_rows": int(len(self.history)),
+            "bluechip_score": float(self.bluechip_score),
+            "signal": getattr(self.signal, "signal", None),
+            "confidence": getattr(self.signal, "confidence", None),
+            "backtest_cagr": getattr(self.backtest, "cagr", None),
+            "backtest_sharpe_ratio": getattr(self.backtest, "sharpe_ratio", None),
+        }
 
 
 def validate_snapshot(snapshot: pd.DataFrame) -> None:
