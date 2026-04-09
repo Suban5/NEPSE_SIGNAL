@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, List
 
 import pandas as pd
@@ -47,7 +47,7 @@ def build_trade_signal(
     timestamp = (
         pd.to_datetime(technical_df.iloc[-1]["date"]).to_pydatetime()
         if not technical_df.empty
-        else datetime.utcnow()
+        else datetime.now(UTC)
     )
     return TradeSignal(
         symbol=symbol,
