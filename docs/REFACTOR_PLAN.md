@@ -1,56 +1,67 @@
 # Architecture Evolution Log
 
 Metadata:
-Owner: suban
-Last Reviewed: 2026-04-08
-Source of Truth: workflows/*.py, api/*.py, nepse_api/*.py, tests/test_coordinator_parity.py
-Validation Method: Code + Tests
+- Owner: suban
+- Last Reviewed: 2026-04-09
+- Source of Truth: workflows/*.py, api/*.py, nepse_api/*.py, tests/test_coordinator_parity.py
+- Validation Method: Code + Tests
 
-This document tracks major architectural decisions and their implementation status.
+This document tracks technical refactoring status and architectural decisions.
 
-## Completed (2026-04-08)
+## Completed
 
-### Coordinator Migration (Enterprise Data Access Pattern)
+### data / nepse_api
+- [x] Extracted upstream calls into `NepseClientProvider` with retry/jitter.
+- [x] Separated normalization into `SnapshotNormalizer` and `HistoricalNormalizer`.
+- [x] Centralized orchestration in `DataFetchCoordinator` with a unified fallback order.
+- [x] Wired CLI, workflows, and API through `build_data_fetch_coordinator()`.
+- [x] Kept `NepseDataFetcher` available as `LegacyNepseDataFetcher` compatibility alias.
+- [x] Added parity tests covering live, persisted snapshot, and security master fallback behavior.
 
-- Extracted upstream calls into `NepseClientProvider` with retry/jitter
-- Separated normalization into `SnapshotNormalizer` and `HistoricalNormalizer`
-- Centralized orchestration in `DataFetchCoordinator` with unified fallback order
-- Wire all dependencies through `build_data_fetch_coordinator()` factory
-- Deprecated `NepseDataFetcher` with `LegacyNepseDataFetcher` compatibility alias
-- All CLI, workflows, and API paths now use coordinator factory
-- Added 8 comprehensive end-to-end parity tests in `test_coordinator_parity.py`
-- Validated identical behavior: live → persisted snapshot → security master fallback
-- Added scoring explainability with score breakdown models, API response types, CLI formatting, and tests
-- Added structured workflow observability with execution IDs in scan/backtest/symbol flows
-- Added analytics API execution_id contract for response-level traceability
-- Added typed analytics response models for improved OpenAPI contract clarity
-- Added typed analytics row models for opportunities and signal summary endpoints
+### workflows
+- [x] Modularized scan, backtest, and symbol orchestration into `workflows/*.py`.
+- [x] Added structured workflow logging with `execution_id` correlation.
+- [x] Standardized workflow summary payloads with `Context.to_summary()` and benchmark `summary` fields.
+- [x] Added workflow failure classification for fetch, scan, score, rank, signal, and backtest stages.
+- [x] Added shared validation helpers for `top_n`, `lookback_days`, `rebalance`, and CLI `limit` inputs.
+- [x] Added workflow regression tests for summary, failure classification, and invalid parameter handling.
 
-### Earlier Completed
+### api
+- [x] Hardened API contracts with typed models and structured `ApiErrorResponse` payloads.
+- [x] Added analytics `execution_id` and optional `summary` fields to analytics responses.
+- [x] Exposed workflow category, stage, and workflow metadata in API error responses.
+- [x] Added OpenAPI/schema tests for analytics and error contract models.
 
-- Workflow modularization into workflows/*
-- API contract hardening with typed models and structured error payloads
-- API telemetry and metrics endpoint
-- Blue-chip scoring configuration improvements
-- Caching and benchmark artifact generation in workflow execution paths
+### cli
+- [x] Kept CLI dispatch thin and aligned it with shared workflow dependencies.
+- [x] Preserved user-facing validation behavior while using typed workflow validation internally.
+- [x] Added CLI summary logging for scan, backtest, and symbol workflows.
+- [x] Added CLI regression tests for invalid parameter handling.
 
-## Active Work
+### analysis / ranking / backtesting
+- [x] Added scoring explainability with score breakdown models and response formatting.
+- [x] Kept ranking and backtesting aligned with workflow-driven outputs and benchmark artifacts.
 
-- None
+## In Progress
 
-## Completed (2026-04-09)
+### api / cli / workflows
+- [ ] Consolidate duplicated output assembly across `api/service.py`, `cli/commands.py`, and `workflows/*.py`.
+- [ ] Normalize any remaining output wrappers so analytics, CLI logs, and benchmark artifacts use the same payload shape.
 
-- Added workflow failure classification for fetch, scan, score, rank, signal, and backtest stages
-- Exposed workflow category, stage, and workflow metadata in API error responses
-- Added workflow and API regression tests for classified validation, data, and ranking failures
-- Added shared validation helpers for workflow top_n, lookback_days, rebalance, and CLI limit inputs
-- Added workflow and CLI regression tests for invalid parameter handling
+## Remaining / Planned
 
-## Active Follow-ups
+### api
+- [ ] Reduce duplicate logic in `api/service.py` by extracting shared analytics payload builders.
+- [ ] Introduce versioned API response handling and explicit backward-compatibility rules.
 
-- Tighten documentation governance automation
-- Expand generated API docs checks in CI
-- Periodically validate feature guides against runtime signatures
+### workflows
+- [ ] Continue tightening workflow orchestration boundaries so shared helpers live in one place.
+- [ ] Expand workflow-layer tests around edge cases and negative-path behavior.
+
+### docs / ci
+- [ ] Expand generated API docs checks in CI.
+- [ ] Tighten documentation governance automation.
+- [ ] Periodically validate feature guides against runtime signatures.
 
 ## Reference Implementation Details
 
@@ -63,4 +74,4 @@ For implementation truth, use:
 - [architecture.md](architecture.md) - system design and module responsibilities
 - `nepse_api/coordinator.py` - data coordinator orchestration
 - `nepse_api/factory.py` - dependency wiring
-- `tests/test_coordinator_parity.py` - e2e data access validation
+- `tests/test_coordinator_parity.py` - end-to-end data access validation
