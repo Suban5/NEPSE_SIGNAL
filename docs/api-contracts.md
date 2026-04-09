@@ -154,6 +154,13 @@ O1 structured logging schema (workflow and analytics service events):
 - `category`: `success` or classified failure category (`validation`, `data`, `upstream`, `ranking`)
 - `symbol_scope`: stage-specific symbol/row counts for context
 
+O2 execution-ID traceability additions:
+
+- `/metrics` includes execution trace fields for workflow-backed analytics routes:
+  - `execution_trace_counts` (per-endpoint count of traced execution IDs)
+  - `last_execution_id_by_endpoint` (latest execution ID seen for each traced endpoint)
+- analytics service structured log events include `execution_id` on success paths for end-to-end correlation
+
 ### Contract Metadata
 - GET /contracts -> ApiContractResponse
 

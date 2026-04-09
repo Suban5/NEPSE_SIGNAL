@@ -333,7 +333,44 @@ def test_metrics_endpoint_returns_snapshot() -> None:
     payload = response.json()
     assert "request_count" in payload
     assert "status_counts" in payload
+    assert "execution_trace_counts" in payload
+    assert "last_execution_id_by_endpoint" in payload
     assert "cache_stats" in payload
+
+
+def test_metrics_endpoint_tracks_analytics_execution_ids(monkeypatch) -> None:
+    """Metrics endpoint should retain latest execution IDs for analytics routes."""
+
+    def _summary(top_n: int, sector_relative: bool):
+        return {
+            "top_n": top_n,
+            "sector_relative": sector_relative,
+            "execution_id": "scan-metrics001",
+            "summary": {
+                "workflow": "market_scan",
+                "execution_id": "scan-metrics001",
+                "output_dir": "output/api/analytics/scan_top_6_sector_1",
+                "top_n": 6,
+                "plot": False,
+                "snapshot_rows": 12,
+                "universe_symbols": 8,
+                "selected_symbols": 5,
+                "signal_rows": 5,
+            },
+            "rows": [{"symbol": "NICA", "signal": "BUY", "confidence": 0.82}],
+        }
+
+    monkeypatch.setattr(api_app_module.service, "analytics_signal_summary", _summary)
+
+    analytics_response = client.get("/analytics/signal-summary", params={"top_n": 6, "sector_relative": True})
+    assert analytics_response.status_code == 200
+
+    metrics_response = client.get("/metrics")
+    assert metrics_response.status_code == 200
+    metrics_payload = metrics_response.json()
+
+    assert metrics_payload["last_execution_id_by_endpoint"]["/analytics/signal-summary"] == "scan-metrics001"
+    assert metrics_payload["execution_trace_counts"]["/analytics/signal-summary"] >= 1
 
 
 def test_contracts_endpoint_returns_versions() -> None:

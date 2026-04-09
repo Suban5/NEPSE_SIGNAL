@@ -110,6 +110,8 @@ class RequestMetricsResponse(BaseModel):
     avg_duration_ms: float
     status_counts: Dict[str, int]
     endpoint_counts: Dict[str, int]
+    execution_trace_counts: Dict[str, int]
+    last_execution_id_by_endpoint: Dict[str, str]
     cache_stats: Dict[str, Dict[str, int]]
 
 

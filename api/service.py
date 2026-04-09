@@ -327,6 +327,7 @@ class NepseApiService:
                 category="success",
                 symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
                 sector_relative=bool(response["sector_relative"]),
+                execution_id=str(response.get("execution_id", "")),
             )
             return response
         except Exception as exc:
@@ -351,6 +352,7 @@ class NepseApiService:
                 category="success",
                 symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
                 sector_relative=bool(response["sector_relative"]),
+                execution_id=str(response.get("execution_id", "")),
             )
             return response
         except Exception as exc:
@@ -375,6 +377,7 @@ class NepseApiService:
                 category="success",
                 symbol_scope={"rows": int(len(response["rows"])), "top_n": int(response["top_n"])},
                 sector_relative=bool(response["sector_relative"]),
+                execution_id=str(response.get("execution_id", "")),
             )
             return response
         except Exception as exc:
@@ -419,6 +422,7 @@ class NepseApiService:
                     "validated_symbols": int(cached_payload.get("historical_validation", {}).get("validated_symbols", 0)),
                 },
                 cache_hit=True,
+                execution_id=str(cached_payload.get("execution_id", "")),
             )
             return cached_payload
 
@@ -476,6 +480,7 @@ class NepseApiService:
                 "validated_symbols": int(payload.get("historical_validation", {}).get("validated_symbols", 0)),
             },
             cache_hit=False,
+            execution_id=str(payload.get("execution_id", "")),
         )
         return payload
 

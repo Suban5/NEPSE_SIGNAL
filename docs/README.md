@@ -28,6 +28,7 @@ Recent updates:
 - C1 versioning now documents header-negotiated v1/v2 behavior with additive `v2` analytics contract metadata
 - C2 doc alignment now includes runtime contract audit notes and test-backed doc validation checks
 - O1 observability now documents structured stage logs with stage, category, and symbol-scope metadata
+- O2 observability now documents execution-ID traceability in analytics logs and `/metrics` snapshots
 
 **Operations:**
 - [API Server Guide](api-server.md) — deployment and HTTP usage

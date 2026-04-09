@@ -200,6 +200,14 @@ def _apply_versioned_analytics_contract(payload: Any, request: Request) -> Any:
         request_header=request.headers.get("X-API-Version"),
     )
 
+def _record_execution_metric(endpoint: str, payload: Any) -> None:
+    """Record workflow execution-id telemetry for metrics snapshots."""
+    if not isinstance(payload, dict):
+        return
+    execution_id = payload.get("execution_id")
+    if isinstance(execution_id, str) and execution_id.strip():
+        metrics_registry.record_execution(endpoint, execution_id)
+
 
 def _wrap_call(method: str, func: Any, *args: Any, **kwargs: Any) -> Any:
     """Execute service call with consistent HTTP error mapping."""
@@ -483,6 +491,7 @@ def analytics_bluechip_ranking(
 ) -> Any:
     """Return workflow-backed blue-chip ranking."""
     payload = _wrap_call("analytics_bluechip_ranking", service.analytics_bluechip_ranking, top_n, sector_relative)
+    _record_execution_metric("/analytics/bluechip-ranking", payload)
     return _apply_versioned_analytics_contract(payload, request)
 
 
@@ -494,6 +503,7 @@ def analytics_opportunities(
 ) -> Any:
     """Return workflow-backed ranked opportunities."""
     payload = _wrap_call("analytics_opportunities", service.analytics_opportunities, top_n, sector_relative)
+    _record_execution_metric("/analytics/opportunities", payload)
     return _apply_versioned_analytics_contract(payload, request)
 
 
@@ -505,6 +515,7 @@ def analytics_signal_summary(
 ) -> Any:
     """Return workflow-backed signal summary."""
     payload = _wrap_call("analytics_signal_summary", service.analytics_signal_summary, top_n, sector_relative)
+    _record_execution_metric("/analytics/signal-summary", payload)
     return _apply_versioned_analytics_contract(payload, request)
 
 
@@ -525,6 +536,7 @@ def analytics_backtest_summary(
         rebalance,
         sector_relative,
     )
+    _record_execution_metric("/analytics/backtest-summary", payload)
     return _apply_versioned_analytics_contract(payload, request)
 
 

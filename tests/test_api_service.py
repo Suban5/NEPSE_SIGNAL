@@ -411,6 +411,7 @@ def test_analytics_service_logs_structured_stage_metadata(
     assert '"stage": "rank"' in caplog.text
     assert '"category": "success"' in caplog.text
     assert '"symbol_scope"' in caplog.text
+    assert '"execution_id": "scan-log001"' in caplog.text
 
 
 def test_call_cached_reuses_cached_result(monkeypatch: pytest.MonkeyPatch) -> None:
