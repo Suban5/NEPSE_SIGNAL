@@ -29,6 +29,16 @@ class ApiContractResponse(BaseModel):
     default_version: str
     negotiated_version: str
     supported_versions: List[str]
+    versioning_strategy: str
+    compatibility_policy: str
+    request_header: Optional[str] = None
+
+
+class ResponseContractMetadata(BaseModel):
+    """Version metadata included in version-aware analytics responses."""
+
+    version: str
+    compatibility_policy: str
     request_header: Optional[str] = None
 
 
@@ -206,6 +216,7 @@ class AnalyticsRowsResponse(BaseModel):
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
     summary: Optional[WorkflowSummary] = None
+    contract: Optional[ResponseContractMetadata] = None
     rows: List[Dict[str, Any]]
 
 
@@ -216,6 +227,7 @@ class AnalyticsBluechipRankingResponse(BaseModel):
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
     summary: Optional[WorkflowSummary] = None
+    contract: Optional[ResponseContractMetadata] = None
     rows: List[Dict[str, Any]]
 
 
@@ -262,6 +274,7 @@ class AnalyticsOpportunitiesResponse(BaseModel):
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
     summary: Optional[WorkflowSummary] = None
+    contract: Optional[ResponseContractMetadata] = None
     rows: List[OpportunityRow]
 
 
@@ -272,6 +285,7 @@ class AnalyticsSignalSummaryResponse(BaseModel):
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
     summary: Optional[WorkflowSummary] = None
+    contract: Optional[ResponseContractMetadata] = None
     rows: List[SignalSummaryRow]
 
 
@@ -311,5 +325,6 @@ class AnalyticsBacktestSummaryResponse(BaseModel):
     sector_relative: bool
     execution_id: str = Field(min_length=1, description="Workflow execution identifier")
     summary: WorkflowSummary
+    contract: Optional[ResponseContractMetadata] = None
     historical_validation: BacktestHistoricalValidation
     portfolio_metrics: BacktestPortfolioMetrics

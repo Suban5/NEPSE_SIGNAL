@@ -246,6 +246,27 @@ class NepseApiService:
             "rows": payload[rows_key],
         }
 
+    @staticmethod
+    def add_contract_metadata(
+        payload: Dict[str, Any],
+        negotiated_version: str,
+        request_header: str | None,
+    ) -> Dict[str, Any]:
+        """Attach version metadata for version-aware analytics responses.
+
+        Version `v1` keeps the original response shape. Version `v2` adds
+        additive metadata under `contract` for explicit negotiation visibility.
+        """
+        if negotiated_version != "v2":
+            return payload
+        versioned_payload = dict(payload)
+        versioned_payload["contract"] = {
+            "version": negotiated_version,
+            "compatibility_policy": "additive, backward-compatible",
+            "request_header": request_header,
+        }
+        return versioned_payload
+
     def _analytics_payload(self, top_n: int, sector_relative: bool) -> Dict[str, Any]:
         """Return cached analytics payload for query parameters."""
         normalized_top_n = max(1, min(int(top_n), 200))

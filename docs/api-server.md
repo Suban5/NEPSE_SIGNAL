@@ -31,6 +31,13 @@ The API middleware sets:
 - X-API-Contract-Version
 - X-API-Supported-Versions
 
+Version negotiation behavior:
+
+- Request header: `X-API-Version`
+- Supported values: `v1`, `v2`
+- Unknown values fall back to `v1`
+- `v2` adds contract metadata for analytics responses while keeping existing fields intact
+
 ## Data Fetch and Cache Behavior
 
 API requests use the same hybrid fetch path as application workflows:

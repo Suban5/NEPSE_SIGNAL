@@ -25,7 +25,7 @@ This document is a planning template for future implementation work. It is inten
 | Scalability | 2 | 2 | 0 | 0 |
 | Technical Debt | 2 | 0 | 0 | 2 |
 | Observability | 2 | 2 | 0 | 0 |
-| Versioning and Contracts | 2 | 2 | 0 | 0 |
+| Versioning and Contracts | 2 | 1 | 0 | 1 |
 | Backtesting | 2 | 1 | 0 | 1 |
 | UI / Dashboard | 2 | 2 | 0 | 0 |
 
@@ -437,16 +437,16 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| C1 | Define versioned API response behavior | Versioning rules are documented and supported in code | API tests verify version negotiation or versioned routes | Not Started |
+| C1 | Define versioned API response behavior | Versioning rules are documented and supported in code | API tests verify version negotiation or versioned routes | Done |
 | C2 | Keep docs aligned with API contracts | Contract docs match runtime models and routes | Documentation review matches `api/app.py` and `api/models.py` | Not Started |
 
 C1 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| C1-T1 | Define the versioning shape for current API responses | `api/app.py`, `api/models.py` | Versioning approach documented in code and docs | Not Started |
-| C1-T2 | Add version-aware response handling where needed | `api/app.py`, `api/service.py` | Versioned behavior can be exercised in tests | Not Started |
-| C1-T3 | Add contract tests for versioned routes or headers | `tests/test_api_app.py` | Tests confirm stable version selection behavior | Not Started |
+| C1-T1 | Define the versioning shape for current API responses | `api/app.py`, `api/models.py` | Versioning approach documented in code and docs | Done |
+| C1-T2 | Add version-aware response handling where needed | `api/app.py`, `api/service.py` | Versioned behavior can be exercised in tests | Done |
+| C1-T3 | Add contract tests for versioned routes or headers | `tests/test_api_app.py` | Tests confirm stable version selection behavior | Done |
 
 C2 Task List:
 

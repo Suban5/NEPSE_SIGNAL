@@ -12,6 +12,13 @@ Validation Method: Code + Tests
 - Supported contract versions: v1, v2
 - Contract discovery endpoint: GET /contracts
 
+Versioning strategy:
+
+- Header-negotiated versioning via `X-API-Version`
+- Unknown/unsupported versions safely fall back to `v1`
+- v1 preserves existing response shapes
+- v2 introduces additive metadata only (backward-compatible)
+
 Data freshness behavior for API-backed analytics routes:
 
 - default fetch path: memory cache -> local datasets -> upstream API
@@ -91,6 +98,13 @@ Analytics response contract (shared fields):
 - summary (optional workflow summary object shared with CLI/workflow artifacts)
 - rows
 
+Version-aware analytics metadata:
+
+- For `v2` requests, analytics responses include `contract` with:
+  - `version`
+  - `compatibility_policy`
+  - `request_header`
+
 U1 field inventory (API, CLI, workflow alignment):
 
 | Surface | Contract Scope | Required Fields |
@@ -135,6 +149,14 @@ U2 explainability contract:
 
 ### Contract Metadata
 - GET /contracts -> ApiContractResponse
+
+Contract metadata fields:
+- default_version
+- negotiated_version
+- supported_versions
+- versioning_strategy
+- compatibility_policy
+- request_header
 
 ## Error Contract
 

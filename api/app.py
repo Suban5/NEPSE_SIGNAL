@@ -175,8 +175,30 @@ def _build_contract_response(request_header: str | None = None) -> dict[str, Any
         "default_version": "v1",
         "negotiated_version": negotiated_version,
         "supported_versions": SUPPORTED_API_VERSIONS,
+        "versioning_strategy": "header-negotiated additive versioning",
+        "compatibility_policy": "non-breaking additive changes in v1; new additive metadata in v2",
         "request_header": request_header,
     }
+
+
+def _resolve_negotiated_version(request: Request) -> str:
+    """Resolve request API version with safe fallback to v1."""
+    requested = (request.headers.get("X-API-Version") or "v1").strip().lower()
+    if requested not in SUPPORTED_API_VERSIONS:
+        return "v1"
+    return requested
+
+
+def _apply_versioned_analytics_contract(payload: Any, request: Request) -> Any:
+    """Apply additive version metadata for analytics responses when requested."""
+    if not isinstance(payload, dict):
+        return payload
+    negotiated_version = _resolve_negotiated_version(request)
+    return service.add_contract_metadata(
+        payload=payload,
+        negotiated_version=negotiated_version,
+        request_header=request.headers.get("X-API-Version"),
+    )
 
 
 def _wrap_call(method: str, func: Any, *args: Any, **kwargs: Any) -> Any:
@@ -455,40 +477,47 @@ def mappings_sector_scrips() -> Any:
 
 @app.get("/analytics/bluechip-ranking", response_model=AnalyticsBluechipRankingResponse, responses=ERROR_RESPONSES)
 def analytics_bluechip_ranking(
+    request: Request,
     top_n: int = Query(default=20, ge=1, le=200),
     sector_relative: bool = Query(default=False),
 ) -> Any:
     """Return workflow-backed blue-chip ranking."""
-    return _wrap_call("analytics_bluechip_ranking", service.analytics_bluechip_ranking, top_n, sector_relative)
+    payload = _wrap_call("analytics_bluechip_ranking", service.analytics_bluechip_ranking, top_n, sector_relative)
+    return _apply_versioned_analytics_contract(payload, request)
 
 
 @app.get("/analytics/opportunities", response_model=AnalyticsOpportunitiesResponse, responses=ERROR_RESPONSES)
 def analytics_opportunities(
+    request: Request,
     top_n: int = Query(default=20, ge=1, le=200),
     sector_relative: bool = Query(default=False),
 ) -> Any:
     """Return workflow-backed ranked opportunities."""
-    return _wrap_call("analytics_opportunities", service.analytics_opportunities, top_n, sector_relative)
+    payload = _wrap_call("analytics_opportunities", service.analytics_opportunities, top_n, sector_relative)
+    return _apply_versioned_analytics_contract(payload, request)
 
 
 @app.get("/analytics/signal-summary", response_model=AnalyticsSignalSummaryResponse, responses=ERROR_RESPONSES)
 def analytics_signal_summary(
+    request: Request,
     top_n: int = Query(default=20, ge=1, le=200),
     sector_relative: bool = Query(default=False),
 ) -> Any:
     """Return workflow-backed signal summary."""
-    return _wrap_call("analytics_signal_summary", service.analytics_signal_summary, top_n, sector_relative)
+    payload = _wrap_call("analytics_signal_summary", service.analytics_signal_summary, top_n, sector_relative)
+    return _apply_versioned_analytics_contract(payload, request)
 
 
 @app.get("/analytics/backtest-summary", response_model=AnalyticsBacktestSummaryResponse, responses=ERROR_RESPONSES)
 def analytics_backtest_summary(
+    request: Request,
     top_n: int = Query(default=20, ge=1, le=200),
     lookback_days: int = Query(default=252, ge=1, le=2000),
     rebalance: str = Query(default="static", pattern="^(static|weekly|monthly)$"),
     sector_relative: bool = Query(default=False),
 ) -> Any:
     """Return workflow-backed market backtest summary and validation details."""
-    return _wrap_call(
+    payload = _wrap_call(
         "analytics_backtest_summary",
         service.analytics_backtest_summary,
         top_n,
@@ -496,6 +525,7 @@ def analytics_backtest_summary(
         rebalance,
         sector_relative,
     )
+    return _apply_versioned_analytics_contract(payload, request)
 
 
 @app.get("/metrics", response_model=RequestMetricsResponse, responses=ERROR_RESPONSES)

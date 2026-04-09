@@ -312,7 +312,20 @@ def test_contracts_endpoint_returns_versions() -> None:
     assert payload["default_version"] == "v1"
     assert payload["negotiated_version"] == "v2"
     assert payload["supported_versions"] == ["v1", "v2"]
+    assert payload["versioning_strategy"] == "header-negotiated additive versioning"
+    assert "compatibility_policy" in payload
     assert response.headers["x-api-contract-version"] == "v2"
+
+
+def test_contracts_endpoint_falls_back_to_v1_for_unknown_header() -> None:
+    """Contracts endpoint should safely fallback to v1 for unsupported header values."""
+    response = client.get("/contracts", headers={"X-API-Version": "v9"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["default_version"] == "v1"
+    assert payload["negotiated_version"] == "v1"
+    assert response.headers["x-api-contract-version"] == "v1"
 
 
 def test_analytics_bluechip_ranking_endpoint_returns_rows(monkeypatch) -> None:
@@ -419,6 +432,43 @@ def test_analytics_signal_summary_endpoint_returns_rows(monkeypatch) -> None:
     assert payload["execution_id"] == "scan-ghi789"
     assert payload["summary"]["workflow"] == "market_scan"
     assert payload["rows"][0]["signal"] == "BUY"
+
+
+def test_analytics_signal_summary_endpoint_includes_contract_metadata_for_v2(monkeypatch) -> None:
+    """Analytics summary should include explicit contract metadata when v2 is negotiated."""
+
+    def _summary(top_n: int, sector_relative: bool):
+        return {
+            "top_n": top_n,
+            "sector_relative": sector_relative,
+            "execution_id": "scan-contract-v2",
+            "summary": {
+                "workflow": "market_scan",
+                "execution_id": "scan-contract-v2",
+                "output_dir": "output/api/analytics/scan_top_6_sector_1",
+                "top_n": 6,
+                "plot": False,
+                "snapshot_rows": 12,
+                "universe_symbols": 8,
+                "selected_symbols": 5,
+                "signal_rows": 5,
+            },
+            "rows": [{"symbol": "NICA", "signal": "BUY", "confidence": 0.82}],
+        }
+
+    monkeypatch.setattr(api_app_module.service, "analytics_signal_summary", _summary)
+
+    response = client.get(
+        "/analytics/signal-summary",
+        params={"top_n": 6, "sector_relative": True},
+        headers={"X-API-Version": "v2"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["contract"]["version"] == "v2"
+    assert payload["contract"]["request_header"] == "v2"
+    assert payload["contract"]["compatibility_policy"] == "additive, backward-compatible"
 
 
 def test_analytics_backtest_summary_endpoint_returns_payload(monkeypatch) -> None:
