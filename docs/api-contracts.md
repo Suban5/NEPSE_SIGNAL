@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-08
+Last Reviewed: 2026-04-09
 Source of Truth: api/app.py, api/models.py, tests/test_api_app.py
 Validation Method: Code + Tests
 
@@ -79,6 +79,7 @@ Analytics response contract (shared fields):
 - top_n
 - sector_relative
 - execution_id (workflow correlation identifier)
+- summary (optional workflow summary object shared with CLI/workflow artifacts)
 - rows
 
 Typed response models:
@@ -88,7 +89,8 @@ Typed response models:
 
 Notes:
 - `AnalyticsBluechipRankingResponse` enforces typed top-level metadata (`top_n`, `sector_relative`, `execution_id`) while keeping `rows` schema flexible (`List[Dict[str, Any]]`) for backward compatibility.
-- `AnalyticsOpportunitiesResponse` and `AnalyticsSignalSummaryResponse` enforce typed row schemas with `extra=allow` to preserve compatibility with additive fields.
+- `AnalyticsOpportunitiesResponse`, `AnalyticsSignalSummaryResponse`, and the shared `AnalyticsRowsResponse` include an optional `summary` field that mirrors the workflow summary contract and keep typed row schemas with `extra=allow` to preserve compatibility with additive fields.
+- `WorkflowSummary` captures the standardized execution summary shared across CLI logs, workflow benchmark payloads, and API analytics responses.
 
 ### Observability
 - GET /metrics -> RequestMetricsResponse

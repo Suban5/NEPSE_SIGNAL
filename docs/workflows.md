@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-08
+Last Reviewed: 2026-04-09
 Source of Truth: workflows/market_scan.py, workflows/market_backtest.py, workflows/symbol_analysis.py, workflows/common.py
 Validation Method: Code + Tests
 
@@ -28,6 +28,10 @@ Outputs:
 - MarketScanContext
 - CSV artifacts and scan_benchmark.json
 
+Standard summary contract:
+- `MarketScanContext.to_summary()` returns the canonical workflow summary used by CLI logs, benchmark payloads, and API analytics responses
+- `scan_benchmark.json` includes the same summary under a `summary` key
+
 Observability:
 - `MarketScanContext.execution_id` provides per-run correlation ID
 - `scan_benchmark.json` includes the same `execution_id`
@@ -49,6 +53,10 @@ Outputs:
 - MarketBacktestContext
 - portfolio_backtest.json, portfolio_signal_set.csv, backtest_benchmark.json
 
+Standard summary contract:
+- `MarketBacktestContext.to_summary()` returns the canonical workflow summary used by CLI logs, benchmark payloads, and API analytics responses
+- `backtest_benchmark.json` includes the same summary under a `summary` key
+
 Observability:
 - `MarketBacktestContext.execution_id` provides per-run correlation ID
 - `backtest_benchmark.json` includes the same `execution_id`
@@ -66,6 +74,9 @@ Inputs:
 
 Outputs:
 - SymbolAnalysisContext including signal and backtest result
+
+Standard summary contract:
+- `SymbolAnalysisContext.to_summary()` returns the canonical execution summary used by CLI output and downstream reporting
 
 Observability:
 - `SymbolAnalysisContext.execution_id` provides per-run correlation ID
