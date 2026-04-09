@@ -63,9 +63,11 @@ This document tracks technical refactoring status and architectural decisions.
   - [x] Added regression tests for API and service-layer backtest summary contract and workflow historical-validation metadata.
   - [x] Added workflow failure-path regressions covering missing history, sparse buy sets, malformed history rows, retriable upstream failures, and artifact stability after workflow exceptions.
 
-## In Progress
+### scalability / duplication reduction (S1)
+- [x] Consolidated analytics response assembly across 3 routes (bluechip-ranking, opportunities, signal-summary) into shared `_analytics_rows_response()` helper in `api/service.py`.
+- [x] Consolidated workflow summary CLI logging across 3 commands (scan, backtest, symbol) into shared `_log_workflow_summary()` helper in `cli/commands.py`.
+- [x] Validated consolidation with full test suite (396 tests passing, 2026-04-09) ensuring no behavioral regression.
 
-### testing
   - [ ] No active testing tasks currently.
 
 ## Remaining / Planned
