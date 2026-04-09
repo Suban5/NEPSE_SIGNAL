@@ -43,6 +43,8 @@ This document tracks major architectural decisions and their implementation stat
 - Added workflow failure classification for fetch, scan, score, rank, signal, and backtest stages
 - Exposed workflow category, stage, and workflow metadata in API error responses
 - Added workflow and API regression tests for classified validation, data, and ranking failures
+- Added shared validation helpers for workflow top_n, lookback_days, rebalance, and CLI limit inputs
+- Added workflow and CLI regression tests for invalid parameter handling
 
 ## Active Follow-ups
 

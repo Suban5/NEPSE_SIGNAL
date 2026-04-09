@@ -25,6 +25,7 @@ from signals.signal_engine import build_trade_signal
 from visualization.charts import save_mplfinance_chart, save_plotly_chart
 from workflows.common import build_historical_signal_frame as workflow_build_historical_signal_frame
 from workflows.errors import WorkflowValidationError
+from workflows.context import validate_positive_int
 from workflows.market_backtest import MarketBacktestDependencies, run_market_backtest_workflow
 from workflows.market_scan import MarketScanDependencies, run_market_scan_workflow
 from workflows.symbol_analysis import SymbolAnalysisDependencies, run_symbol_analysis_workflow
@@ -369,7 +370,7 @@ def top_volume(args: argparse.Namespace) -> None:
         args: CLI arguments.
     """
     fetcher = build_data_fetch_coordinator()
-    limit = max(1, int(getattr(args, "limit", 10)))
+    limit = validate_positive_int(getattr(args, "limit", 10), "limit")
     force_refresh = bool(getattr(args, "force_refresh", False))
 
     snapshot = fetcher.get_market_snapshot(force_refresh=force_refresh)

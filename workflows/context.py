@@ -9,6 +9,9 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 
+VALID_REBALANCE_MODES = {"static", "weekly", "monthly"}
+
+
 @dataclass(frozen=True)
 class MarketScanContext:
     """Artifacts produced during the market scan workflow."""
@@ -131,4 +134,24 @@ def validate_symbol(symbol: Optional[str]) -> str:
     normalized = str(symbol).upper().strip()
     if not normalized.isalnum():
         raise ValueError("Symbol must be alphanumeric")
+    return normalized
+
+
+def validate_positive_int(value: Any, field_name: str, minimum: int = 1) -> int:
+    """Validate that a numeric input is an integer greater than or equal to a minimum."""
+    try:
+        normalized = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be an integer") from exc
+
+    if normalized < minimum:
+        raise ValueError(f"{field_name} must be >= {minimum}")
+    return normalized
+
+
+def validate_rebalance_mode(rebalance: str) -> str:
+    """Validate the portfolio rebalance mode."""
+    normalized = str(rebalance).strip().lower()
+    if normalized not in VALID_REBALANCE_MODES:
+        raise ValueError(f"rebalance must be one of {sorted(VALID_REBALANCE_MODES)}")
     return normalized

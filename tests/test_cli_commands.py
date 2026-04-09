@@ -321,6 +321,17 @@ def test_scan_symbol_requires_symbol_argument() -> None:
         commands.scan_symbol(args)
 
 
+def test_top_volume_rejects_invalid_limit(monkeypatch) -> None:
+    """top_volume should reject non-positive limits."""
+    coordinator_mock = MagicMock()
+    monkeypatch.setattr(commands, "build_data_fetch_coordinator", lambda: coordinator_mock)
+
+    args = argparse.Namespace(limit=0, force_refresh=False)
+
+    with pytest.raises(ValueError, match="limit must be >= 1"):
+        commands.top_volume(args)
+
+
 def test_health_check_validates_snapshot(monkeypatch) -> None:
     """health_check should raise RuntimeError on empty snapshot."""
     coordinator_mock = MagicMock()

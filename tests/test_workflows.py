@@ -9,6 +9,7 @@ import json
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from bluechip.detector import BlueChipDetector
 from market.market_scanner import MarketScanner
@@ -194,6 +195,30 @@ def test_market_scan_workflow_classifies_ranking_failure(tmp_path: Path) -> None
         raise AssertionError("Expected WorkflowRankingError")
 
 
+def test_market_scan_workflow_rejects_non_positive_top_n(tmp_path: Path) -> None:
+    """Market scan should reject non-positive top_n values before executing."""
+    dependencies = MarketScanDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame,
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda df: df,
+        build_ranked_views_fn=lambda bc, sig: {
+            "top_bluechips": bc,
+            "best_buy_signals": sig,
+            "strong_momentum": sig,
+            "high_risk_weak": sig,
+        },
+    )
+
+    with pytest.raises(ValueError, match="top_n must be >= 1"):
+        run_market_scan_workflow(dependencies, tmp_path, top_n=0, plot=False)
+
+
 def test_market_backtest_workflow_writes_outputs(tmp_path: Path) -> None:
     """Market backtest workflow should produce portfolio outputs and selected symbols."""
     dependencies = MarketBacktestDependencies(
@@ -235,6 +260,27 @@ def test_market_backtest_workflow_writes_outputs(tmp_path: Path) -> None:
     assert "total_seconds" in benchmark_payload
     assert context.to_summary()["workflow"] == "market_backtest"
     assert context.to_summary()["buy_symbols"] == len(context.selected_buy_symbols)
+
+
+def test_market_backtest_workflow_rejects_invalid_parameters(tmp_path: Path) -> None:
+    """Market backtest should reject invalid numeric and enum inputs."""
+    dependencies = MarketBacktestDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame,
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda df: df,
+    )
+
+    with pytest.raises(ValueError, match="lookback_days must be >= 1"):
+        run_market_backtest_workflow(dependencies, tmp_path, top_n=2, lookback_days=0, rebalance="static")
+
+    with pytest.raises(ValueError, match="rebalance must be one of"):
+        run_market_backtest_workflow(dependencies, tmp_path, top_n=2, lookback_days=20, rebalance="quarterly")
 
 
 def test_symbol_analysis_workflow_returns_context() -> None:

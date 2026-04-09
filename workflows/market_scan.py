@@ -26,7 +26,7 @@ from .common import (
     render_charts,
 )
 from .errors import WorkflowDataError, WorkflowRankingError, classify_workflow_exception
-from .context import MarketScanContext
+from .context import MarketScanContext, validate_positive_int
 
 
 @dataclass(frozen=True)
@@ -62,13 +62,14 @@ def run_market_scan_workflow(
         force_refresh: If True, bypass cache and fetch fresh data from API.
     """
     started_at = time.perf_counter()
+    normalized_top_n = validate_positive_int(top_n, "top_n")
     execution_id = new_execution_id("market-scan")
     output_dir.mkdir(parents=True, exist_ok=True)
     log_workflow_event(
         workflow="market_scan",
         execution_id=execution_id,
         event="workflow_started",
-        top_n=int(top_n),
+        top_n=normalized_top_n,
         plot=bool(plot),
         force_refresh=bool(force_refresh),
         output_dir=str(output_dir),
@@ -107,7 +108,7 @@ def run_market_scan_workflow(
     if bluechip_ranked.empty:
         raise WorkflowRankingError("market_scan", "score", "No stocks qualified for blue-chip scoring.")
 
-    selected_symbols: List[str] = bluechip_ranked.head(top_n)["symbol"].tolist()
+    selected_symbols: List[str] = bluechip_ranked.head(normalized_top_n)["symbol"].tolist()
     signal_started = time.perf_counter()
     try:
         signal_rows = compute_symbol_signal_rows(
@@ -148,7 +149,7 @@ def run_market_scan_workflow(
     total_elapsed = time.perf_counter() - started_at
     context = MarketScanContext(
         output_dir=output_dir,
-        top_n=top_n,
+        top_n=normalized_top_n,
         plot=plot,
         execution_id=execution_id,
         snapshot=snapshot,
@@ -175,7 +176,7 @@ def run_market_scan_workflow(
                 "snapshot_rows": int(len(snapshot)),
                 "universe_symbols": int(len(symbols)),
                 "selected_symbols": int(len(selected_symbols)),
-                "top_n": int(top_n),
+                "top_n": normalized_top_n,
                 "plot": bool(plot),
             },
             "summary": context.to_summary(),

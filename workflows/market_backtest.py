@@ -26,7 +26,7 @@ from .common import (
     rank_signal_frame,
 )
 from .errors import WorkflowDataError, WorkflowRankingError, classify_workflow_exception
-from .context import MarketBacktestContext
+from .context import MarketBacktestContext, validate_positive_int, validate_rebalance_mode
 
 
 @dataclass(frozen=True)
@@ -61,15 +61,18 @@ def run_market_backtest_workflow(
         force_refresh: If True, bypass cache and fetch fresh data from API.
     """
     started_at = time.perf_counter()
+    normalized_top_n = validate_positive_int(top_n, "top_n")
+    normalized_lookback_days = validate_positive_int(lookback_days, "lookback_days")
+    normalized_rebalance = validate_rebalance_mode(rebalance)
     execution_id = new_execution_id("market-backtest")
     output_dir.mkdir(parents=True, exist_ok=True)
     log_workflow_event(
         workflow="market_backtest",
         execution_id=execution_id,
         event="workflow_started",
-        top_n=int(top_n),
-        lookback_days=int(lookback_days),
-        rebalance=rebalance,
+        top_n=normalized_top_n,
+        lookback_days=normalized_lookback_days,
+        rebalance=normalized_rebalance,
         force_refresh=bool(force_refresh),
         output_dir=str(output_dir),
     )
@@ -107,7 +110,7 @@ def run_market_backtest_workflow(
     if bluechip_ranked.empty:
         raise WorkflowRankingError("market_backtest", "score", "No stocks qualified for blue-chip scoring.")
 
-    selected_symbols: List[str] = bluechip_ranked.head(top_n)["symbol"].tolist()
+    selected_symbols: List[str] = bluechip_ranked.head(normalized_top_n)["symbol"].tolist()
     signal_started = time.perf_counter()
     try:
         signal_rows = compute_symbol_signal_rows(
@@ -135,8 +138,8 @@ def run_market_backtest_workflow(
         portfolio_result: PortfolioBacktestResult = run_portfolio_backtest(
             historical_universe=filtered_history,
             selected_symbols=buy_symbols,
-            lookback_days=lookback_days,
-            rebalance=rebalance,
+            lookback_days=normalized_lookback_days,
+            rebalance=normalized_rebalance,
         )
     except Exception as exc:
         raise classify_workflow_exception("market_backtest", "backtest", exc) from exc
@@ -149,16 +152,16 @@ def run_market_backtest_workflow(
         "max_drawdown": portfolio_result.max_drawdown,
         "sharpe_ratio": portfolio_result.sharpe_ratio,
         "total_return": portfolio_result.total_return,
-        "lookback_days": lookback_days,
-        "rebalance": rebalance,
+        "lookback_days": normalized_lookback_days,
+        "rebalance": normalized_rebalance,
     }
 
     total_elapsed = time.perf_counter() - started_at
     context = MarketBacktestContext(
         output_dir=output_dir,
-        top_n=top_n,
-        lookback_days=lookback_days,
-        rebalance=rebalance,
+        top_n=normalized_top_n,
+        lookback_days=normalized_lookback_days,
+        rebalance=normalized_rebalance,
         execution_id=execution_id,
         snapshot=snapshot,
         historical_universe=historical_universe,
@@ -186,9 +189,9 @@ def run_market_backtest_workflow(
                 "universe_symbols": int(len(symbols)),
                 "selected_symbols": int(len(selected_symbols)),
                 "buy_symbols": int(len(buy_symbols)),
-                "top_n": int(top_n),
-                "lookback_days": int(lookback_days),
-                "rebalance": rebalance,
+                "top_n": normalized_top_n,
+                "lookback_days": normalized_lookback_days,
+                "rebalance": normalized_rebalance,
             },
             "summary": context.to_summary(),
         },

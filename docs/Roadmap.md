@@ -2,7 +2,7 @@
 
 Metadata:
 Owner: suban
-Last Reviewed: 2026-04-08
+Last Reviewed: 2026-04-09
 Source of Truth: api/app.py, api/service.py, cli/commands.py, workflows/*.py, bluechip/detector.py, docs/*.md
 Validation Method: Code + Tests
 
@@ -71,9 +71,8 @@ Remaining stabilization tasks:
 - Increase test coverage to at least 80 percent for service and workflow layers
 - Standardize output contracts across `api/app.py`, `cli/commands.py`, and `workflows/*.py`
 - Add failure classification for fetch, scan, and ranking workflows
-- Strengthen input validation across all entry points
 
-Status update (2026-04-09): failure classification for workflow fetch/scan/ranking paths is now implemented and covered by tests; remaining stabilization work focuses on coverage, contract standardization, and input validation.
+Status update (2026-04-09): failure classification for workflow fetch/scan/ranking paths and input validation for workflow and CLI entry points are now implemented and covered by tests; remaining stabilization work focuses on coverage and contract standardization.
 
 ### Mid-Term
 
