@@ -15,7 +15,11 @@ from bluechip.detector import BlueChipDetector
 from market.market_scanner import MarketScanner
 from workflows.common import build_fundamentals_map, fetch_market_snapshot
 from workflows.errors import WorkflowDataError, WorkflowRankingError, WorkflowValidationError
-from workflows.market_backtest import MarketBacktestDependencies, run_market_backtest_workflow
+from workflows.market_backtest import (
+    MarketBacktestDependencies,
+    _build_historical_validation,
+    run_market_backtest_workflow,
+)
 from workflows.market_scan import MarketScanDependencies, run_market_scan_workflow
 from workflows.symbol_analysis import SymbolAnalysisDependencies, run_symbol_analysis_workflow
 
@@ -195,6 +199,46 @@ def test_market_scan_workflow_classifies_ranking_failure(tmp_path: Path) -> None
         raise AssertionError("Expected WorkflowRankingError")
 
 
+def test_market_scan_workflow_does_not_emit_artifacts_on_ranking_failure(tmp_path: Path) -> None:
+    """Market scan should leave no benchmark artifacts behind when ranking fails."""
+    dependencies = MarketScanDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame.assign(
+            sma20=frame["close"],
+            sma50=frame["close"],
+            sma200=frame["close"],
+            ema20=frame["close"],
+            rsi14=50.0,
+            macd=0.1,
+            macd_signal=0.05,
+            bb_upper=frame["close"] + 2,
+            bb_lower=frame["close"] - 2,
+            volume_sma20=frame["volume"],
+            volume_trend=1.0,
+        ),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda _df: (_ for _ in ()).throw(RuntimeError("ranking exploded")),
+        build_ranked_views_fn=lambda bc, sig: {
+            "top_bluechips": bc,
+            "best_buy_signals": sig,
+            "strong_momentum": sig,
+            "high_risk_weak": sig,
+        },
+    )
+
+    with pytest.raises(WorkflowRankingError):
+        run_market_scan_workflow(dependencies, tmp_path, top_n=2, plot=False)
+
+    assert not (tmp_path / "bluechip_ranked.csv").exists()
+    assert not (tmp_path / "signal_summary.csv").exists()
+    assert not (tmp_path / "scan_benchmark.json").exists()
+
+
 def test_market_scan_workflow_rejects_non_positive_top_n(tmp_path: Path) -> None:
     """Market scan should reject non-positive top_n values before executing."""
     dependencies = MarketScanDependencies(
@@ -287,6 +331,56 @@ def test_market_backtest_workflow_rejects_invalid_parameters(tmp_path: Path) -> 
 
     with pytest.raises(ValueError, match="rebalance must be one of"):
         run_market_backtest_workflow(dependencies, tmp_path, top_n=2, lookback_days=20, rebalance="quarterly")
+
+
+def test_build_historical_validation_marks_missing_and_sparse_symbols() -> None:
+    """Historical validation should classify missing and insufficient symbols separately."""
+    filtered_history = {
+        "AAA": _build_history("AAA", 100.0).head(3).copy(),
+        "CCC": _build_history("CCC", 120.0).head(1).copy(),
+    }
+
+    validation = _build_historical_validation(filtered_history, ["AAA", "BBB", "CCC"], lookback_days=5)
+
+    assert validation["validated_symbols"] == 3
+    assert validation["sufficient_symbols"] == 1
+    assert validation["insufficient_symbols"] == 1
+    assert validation["sufficient_history_symbols"] == ["AAA"]
+    assert validation["insufficient_history_symbols"] == ["CCC"]
+    assert validation["missing_history_symbols"] == ["BBB"]
+    assert validation["symbol_row_counts"] == {"AAA": 3, "BBB": 0, "CCC": 1}
+
+
+def test_market_backtest_workflow_rejects_buy_symbols_without_sufficient_history(tmp_path: Path) -> None:
+    """Market backtest should fail cleanly when BUY symbols do not have enough history."""
+    dependencies = MarketBacktestDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame,
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda df: pd.DataFrame({"symbol": ["AAA"], "signal": ["BUY"]}),
+    )
+
+    dependencies.scanner.scan = lambda snapshot, historical_universe: (
+        ["AAA"],
+        {"AAA": _build_history("AAA", 100.0).head(1).copy()},
+    )
+    dependencies.detector.build_feature_table = lambda snapshot, filtered_history, fundamentals: pd.DataFrame(
+        {"symbol": ["AAA"], "bluechip_score": [0.91]}
+    )
+    dependencies.detector.score_bluechips = lambda features: features
+    dependencies.detector.select_top_symbols = lambda ranked, top_n: ["AAA"]
+
+    with pytest.raises(WorkflowDataError, match="No BUY symbols have sufficient historical rows for backtest window."):
+        run_market_backtest_workflow(dependencies, tmp_path, top_n=1, lookback_days=20, rebalance="static")
+
+    assert not (tmp_path / "portfolio_backtest.json").exists()
+    assert not (tmp_path / "portfolio_signal_set.csv").exists()
+    assert not (tmp_path / "backtest_benchmark.json").exists()
 
 
 def test_symbol_analysis_workflow_returns_context() -> None:

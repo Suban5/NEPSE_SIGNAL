@@ -61,8 +61,12 @@ This document tracks feature-level progress and remaining product milestones. It
 - [x] Added backtesting validation against historical NEPSE data and exposed summary results via API and CLI.
 - [x] Enforced a single source of truth for blue-chip score access and ranking merge semantics across detector, workflows, and ranking modules.
 
+### reliability
+- [x] Strengthened API, service, and CLI input validation for symbol, date, and pagination inputs.
+
 ### testing
 - [x] Added regression coverage for API and workflow backtest-summary contract behavior.
+- [x] Added workflow failure-path regressions for empty data, sparse history, malformed payloads, and upstream exception handling.
 
 ### testing
 - [x] Expanded regression coverage for negative-path behavior in workflows and API routes.

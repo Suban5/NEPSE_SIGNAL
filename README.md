@@ -68,6 +68,8 @@ Workflow observability:
 - `scan-market`, `backtest-market`, and `analyze` emit a workflow `execution_id` in CLI logs
 - benchmark artifacts include the same `execution_id` and standardized `summary` payload for cross-run correlation
 - analytics API responses include `execution_id` and `summary` for correlation with workflow logs/artifacts
+- API and CLI inputs now validate symbol, date, pagination, and trading-average parameters consistently before workflow execution
+- backtest workflow outputs include historical validation and portfolio metrics, documented in the workflow and API contract references
 
 Snapshot fallback order:
 

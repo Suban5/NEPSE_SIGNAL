@@ -9,8 +9,8 @@ Validation Method: Code + Tests
 Version: v1.0
 Contributors: TBD
 Review Cycle: bi-weekly or per release
-Execution Start: TBD
-Last Execution Update: TBD
+Execution Start: 2026-04-09
+Last Execution Update: 2026-04-09
 
 ## Purpose
 
@@ -20,13 +20,13 @@ This document is a planning template for future implementation work. It is inten
 
 | Area | Total Milestones | Not Started | In Progress | Done |
 |---|---|---|---|---|
-| Reliability | 2 | 2 | 0 | 0 |
+| Reliability | 2 | 0 | 0 | 2 |
 | Usability | 2 | 2 | 0 | 0 |
 | Scalability | 2 | 2 | 0 | 0 |
-| Technical Debt | 2 | 2 | 0 | 0 |
+| Technical Debt | 2 | 1 | 0 | 1 |
 | Observability | 2 | 2 | 0 | 0 |
 | Versioning and Contracts | 2 | 2 | 0 | 0 |
-| Backtesting | 2 | 2 | 0 | 0 |
+| Backtesting | 2 | 1 | 0 | 1 |
 | UI / Dashboard | 2 | 2 | 0 | 0 |
 
 ## Execution Order (Recommended)
@@ -95,17 +95,17 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| R1 | Strengthen input validation in `api/app.py`, `api/service.py`, and `cli/commands.py` | Invalid inputs are rejected consistently and documented | Targeted tests pass for invalid payloads and missing fields | Not Started |
-| R2 | Improve failure-path coverage for fetch → scan → rank workflows | Critical workflow failures are covered by tests and handled predictably | Workflow tests pass for empty data, network failure, and parsing failure cases | Not Started |
+| R1 | Strengthen input validation in `api/app.py`, `api/service.py`, and `cli/commands.py` | Invalid inputs are rejected consistently and documented | Targeted tests pass for invalid payloads and missing fields | Done |
+| R2 | Improve failure-path coverage for fetch → scan → rank workflows | Critical workflow failures are covered by tests and handled predictably | Workflow tests pass for empty data, sparse history, malformed payloads, and upstream exception cases | Done |
 
 R2 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| R2-T1 | Enumerate failure modes for fetch, scan, score, and rank steps | `workflows/*.py`, `api/service.py` | Failure matrix documented for each pipeline stage | Not Started |
-| R2-T2 | Add deterministic failure-path tests for empty data and missing symbols | `tests/test_workflows.py`, `tests/test_data_fetcher_flows.py` | Tests confirm graceful handling of empty or missing inputs | Not Started |
-| R2-T3 | Add failure-path tests for network, parsing, and upstream exceptions | `tests/test_api_app.py`, `tests/test_data_fetcher_flows.py`, `tests/test_cli_commands.py` | Tests confirm expected error mapping and failure classification | Not Started |
-| R2-T4 | Verify workflow outputs remain stable after simulated failures | `workflows/market_scan.py`, `workflows/market_backtest.py`, `workflows/symbol_analysis.py` | Smoke checks confirm no partial invalid artifacts are emitted | Not Started |
+| R2-T1 | Enumerate failure modes for fetch, scan, score, and rank steps | `workflows/*.py`, `api/service.py` | Failure matrix documented for each pipeline stage | Done |
+| R2-T2 | Add deterministic failure-path tests for empty data and missing symbols | `tests/test_workflows.py`, `tests/test_data_fetcher_flows.py` | Tests confirm graceful handling of empty or missing inputs | Done |
+| R2-T3 | Add failure-path tests for network, parsing, and upstream exceptions | `tests/test_api_app.py`, `tests/test_data_fetcher_flows.py`, `tests/test_cli_commands.py` | Tests confirm expected error mapping and failure classification | Done |
+| R2-T4 | Verify workflow outputs remain stable after simulated failures | `workflows/market_scan.py`, `workflows/market_backtest.py`, `workflows/symbol_analysis.py` | Smoke checks confirm no partial invalid artifacts are emitted | Done |
 
 Assumptions:
 
@@ -122,6 +122,7 @@ Deliverables:
 - failure mode matrix
 - updated test suite
 - error classification mapping
+- artifact stability checks for failed scan/backtest runs
 
 Change Impact Rule:
 
@@ -138,10 +139,10 @@ R1 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| R1-T1 | Review current input handling and enumerate missing validation paths | `api/app.py`, `api/service.py`, `cli/commands.py` | Gap list documented against current route and CLI behavior | Not Started |
-| R1-T2 | Add validation for required request fields and query parameters | `api/app.py`, `api/models.py`, `cli/commands.py` | Invalid inputs are rejected with consistent error behavior | Not Started |
-| R1-T3 | Tighten service-layer parameter checks for symbol, date, and pagination inputs | `api/service.py`, `workflows/*.py` | Service tests confirm invalid values fail fast | Not Started |
-| R1-T4 | Add and update tests for validation failures and boundary cases | `tests/test_api_app.py`, `tests/test_cli_commands.py`, `tests/test_workflows.py` | Tests pass for missing values, malformed values, and boundary conditions | Not Started |
+| R1-T1 | Review current input handling and enumerate missing validation paths | `api/app.py`, `api/service.py`, `cli/commands.py` | Gap list documented against current route and CLI behavior | Done |
+| R1-T2 | Add validation for required request fields and query parameters | `api/app.py`, `api/models.py`, `cli/commands.py` | Invalid inputs are rejected with consistent error behavior | Done |
+| R1-T3 | Tighten service-layer parameter checks for symbol, date, and pagination inputs | `api/service.py`, `workflows/*.py` | Service tests confirm invalid values fail fast | Done |
+| R1-T4 | Add and update tests for validation failures and boundary cases | `tests/test_api_app.py`, `tests/test_cli_commands.py`, `tests/test_workflows.py` | Tests pass for missing values, malformed values, and boundary conditions | Done |
 
 Milestone Checklist Template:
 
@@ -302,7 +303,7 @@ Milestones:
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
 | D1 | Refactor workflow orchestration boundaries | Workflow responsibilities are clearer and easier to maintain | Workflow tests still pass after refactor | Not Started |
-| D2 | Enforce a single source of truth for scoring logic | Scoring logic lives in one primary module path | Scoring tests confirm consistent results across consumers | Not Started |
+| D2 | Enforce a single source of truth for scoring logic | Scoring logic lives in one primary module path | Scoring tests confirm consistent results across consumers | Done |
 
 D1 Task List:
 
@@ -503,7 +504,7 @@ Milestones:
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
 | B1 | Validate historical backtesting engine behavior | Backtest outputs are reproducible on known data | Backtest tests pass for basic and edge-case datasets | Not Started |
-| B2 | Expose backtest summaries through CLI and API workflows | Backtest summaries are visible in user-facing outputs | Workflow tests confirm summary artifacts are produced | Not Started |
+| B2 | Expose backtest summaries through CLI and API workflows | Backtest summaries are visible in user-facing outputs | Workflow tests confirm summary artifacts are produced | Done |
 
 B1 Task List:
 

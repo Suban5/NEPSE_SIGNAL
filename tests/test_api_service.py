@@ -125,6 +125,34 @@ def test_live_market_and_company_history_return_rows() -> None:
     assert len(history_rows) == 2
 
 
+def test_service_validation_helpers_reject_invalid_symbol_and_dates() -> None:
+    """Service methods should fail fast for invalid symbol and date inputs."""
+    service = _build_service(SimpleNamespace())
+
+    with pytest.raises(ValueError, match="Symbol must be alphanumeric"):
+        service.company_details("NAB!L")
+
+    with pytest.raises(ValueError, match="start_date must be <= end_date"):
+        service.company_history("NABIL", pd.Timestamp("2026-01-10").date(), pd.Timestamp("2026-01-01").date())
+
+    with pytest.raises(ValueError, match="business_date must be in YYYY-MM-DD format"):
+        service.trading_average("2026/01/15", 30)
+
+
+def test_service_validation_helpers_reject_invalid_pagination_inputs() -> None:
+    """Pagination-oriented service methods should reject non-positive values."""
+    service = _build_service(SimpleNamespace())
+
+    with pytest.raises(ValueError, match="page must be >= 1"):
+        service.company_news_list(page=0, page_size=10)
+
+    with pytest.raises(ValueError, match="page_size must be >= 1"):
+        service.news_alert_list(page=1, page_size=0)
+
+    with pytest.raises(ValueError, match="page must be >= 0"):
+        service.nepse_notice(page=-1)
+
+
 def test_analytics_methods_share_cached_workflow_payload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Analytics methods should reuse one workflow payload and preserve the shared response contract."""
     service = _build_service(SimpleNamespace())

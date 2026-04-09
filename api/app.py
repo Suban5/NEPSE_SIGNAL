@@ -14,8 +14,11 @@ from uuid import uuid4
 from contextvars import ContextVar
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi.responses import JSONResponse
 
 from typing_extensions import Annotated
+from pydantic import ValidationError
+from pydantic_core import ValidationError as PydanticCoreValidationError
 
 from api.models import (
     AnalyticsBacktestSummaryResponse,
@@ -87,6 +90,23 @@ async def add_request_context(request: Request, call_next: Any) -> Response:
         request_id_var.reset(token)
 
 
+@app.exception_handler(ValidationError)
+async def handle_validation_error(request: Request, exc: ValidationError) -> JSONResponse:
+    """Convert Pydantic validation failures into a stable 422 response."""
+    del request
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
+
+@app.exception_handler(PydanticCoreValidationError)
+async def handle_pydantic_core_validation_error(
+    request: Request,
+    exc: PydanticCoreValidationError,
+) -> JSONResponse:
+    """Convert pydantic-core validation failures into a stable 422 response."""
+    del request
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
+
 def _extract_status_code(exc: Exception) -> int:
     """Extract HTTP status code from upstream exception when available."""
     if isinstance(exc, WorkflowError):
@@ -94,6 +114,9 @@ def _extract_status_code(exc: Exception) -> int:
 
     if isinstance(exc, HTTPException):
         return int(exc.status_code)
+
+    if isinstance(exc, ValueError):
+        return 400
 
     status_code = getattr(exc, "status_code", None)
     if isinstance(status_code, int) and 400 <= status_code <= 599:

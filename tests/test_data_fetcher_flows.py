@@ -288,6 +288,34 @@ def test_fetch_historical_ohlcv_empty_response(monkeypatch: pytest.MonkeyPatch) 
     assert history.empty
 
 
+def test_fetch_historical_ohlcv_skips_rows_with_invalid_dates(monkeypatch: pytest.MonkeyPatch) -> None:
+    """fetch_historical_ohlcv should drop rows that cannot be parsed into dates."""
+    mock_return = {
+        "history": [
+            {
+                "businessDate": "not-a-date",
+                "openPrice": 1000,
+                "closePrice": 1010,
+                "totalTradedQuantity": 10000,
+            },
+            {
+                "businessDate": "2025-01-02",
+                "openPrice": 1010,
+                "closePrice": 1020,
+                "totalTradedQuantity": 11000,
+            },
+        ]
+    }
+
+    fetcher = _setup_fake_fetcher(monkeypatch, mock_return)
+    monkeypatch.setattr(fetcher, "_call_unofficial_client", lambda method_name, **kwargs: mock_return["history"])
+
+    history = fetcher.fetch_historical_ohlcv("NABIL")
+
+    assert len(history) == 1
+    assert history.iloc[0]["date"] == pd.to_datetime("2025-01-02")
+
+
 def test_fetch_historical_ohlcv_with_date_range(monkeypatch: pytest.MonkeyPatch) -> None:
     """fetch_historical_ohlcv should accept start_date and end_date parameters."""
     from datetime import date
@@ -618,6 +646,36 @@ def test_fetch_universe_with_history_retries_transient_failures(monkeypatch: pyt
 
     assert "AAA" in universe
     assert attempts["AAA"] == 2
+
+
+def test_fetch_universe_with_history_skips_symbols_with_permanent_upstream_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Universe fetching should skip a symbol when its history fetch fails permanently."""
+
+    class _MockFetcher(NepseDataFetcher):
+        def fetch_daily_market_snapshot(self) -> pd.DataFrame:
+            return pd.DataFrame({"symbol": ["AAA", "BBB"]})
+
+        def _fetch_historical_with_retry(self, symbol: str, start_date: Any, end_date: Any) -> pd.DataFrame:
+            if symbol == "AAA":
+                raise RuntimeError("temporary upstream error")
+            return pd.DataFrame(
+                {
+                    "date": pd.date_range("2025-01-01", periods=200),
+                    "close": [100 + i for i in range(200)],
+                }
+            )
+
+    monkeypatch.setattr(NepseDataFetcher, "__init__", lambda self, config=None: None)
+    monkeypatch.setattr(NepseDataFetcher, "fetch_daily_market_snapshot", _MockFetcher.fetch_daily_market_snapshot)
+    monkeypatch.setattr(NepseDataFetcher, "_fetch_historical_with_retry", _MockFetcher._fetch_historical_with_retry)
+
+    fetcher = NepseDataFetcher()
+    fetcher.config = _build_config()
+
+    universe = fetcher.fetch_universe_with_history(min_history_rows=100)
+
+    assert "AAA" not in universe
+    assert "BBB" in universe
 
 
 # --- Integration Tests ---

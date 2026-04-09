@@ -296,6 +296,15 @@ def scan_symbol(args: argparse.Namespace) -> None:
         args: CLI arguments.
     """
     try:
+        parsed_start_date = _parse_date(getattr(args, "start_date", None))
+        parsed_end_date = _parse_date(getattr(args, "end_date", None))
+    except ValueError as exc:
+        raise ValueError("start-date and end-date must be in YYYY-MM-DD format") from exc
+
+    if parsed_start_date is not None and parsed_end_date is not None and parsed_start_date > parsed_end_date:
+        raise ValueError("start-date must be <= end-date")
+
+    try:
         context = run_symbol_analysis_workflow(
             SymbolAnalysisDependencies(
                 coordinator=build_data_fetch_coordinator(),
@@ -305,8 +314,8 @@ def scan_symbol(args: argparse.Namespace) -> None:
                 add_indicators_fn=add_indicators,
             ),
             symbol=getattr(args, "symbol", None),
-            start_date=getattr(args, "start_date", None),
-            end_date=getattr(args, "end_date", None),
+            start_date=parsed_start_date,
+            end_date=parsed_end_date,
         )
     except WorkflowValidationError as exc:
         raise ValueError(str(exc)) from exc

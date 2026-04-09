@@ -51,6 +51,23 @@ def test_company_details_endpoint_uses_path_param(monkeypatch) -> None:
     assert response.json()["symbol"] == "NABIL"
 
 
+def test_company_details_endpoint_rejects_invalid_symbol(monkeypatch) -> None:
+    """Company details endpoint should surface invalid symbols as client errors."""
+
+    def _company_details(symbol: str):
+        del symbol
+        raise ValueError("Symbol must be alphanumeric")
+
+    monkeypatch.setattr(api_app_module.service, "company_details", _company_details)
+
+    response = client.get("/companies/NAB!L")
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["detail"]["error"]["type"] == "ValueError"
+    assert payload["detail"]["error"]["message"] == "Symbol must be alphanumeric"
+
+
 def test_trading_average_endpoint_passes_query_params(monkeypatch) -> None:
     """Trading average endpoint should pass query params to service call."""
 
@@ -65,6 +82,29 @@ def test_trading_average_endpoint_passes_query_params(monkeypatch) -> None:
     payload = response.json()
     assert payload["businessDate"] == "2026-01-15"
     assert payload["nDays"] == 30
+
+
+def test_company_history_endpoint_rejects_inverted_date_range() -> None:
+    """Company history query should reject start_date after end_date."""
+    response = client.get(
+        "/companies/NABIL/history",
+        params={"start_date": "2026-01-10", "end_date": "2026-01-01"},
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["detail"]["error"]["type"] == "ValueError"
+    assert payload["detail"]["error"]["message"] == "start_date must be <= end_date"
+
+
+def test_trading_average_endpoint_rejects_invalid_business_date() -> None:
+    """Trading average query should reject malformed business_date values."""
+    response = client.get("/trading/average", params={"business_date": "2026/01/15", "n_days": 30})
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["detail"]["error"]["type"] == "ValueError"
+    assert payload["detail"]["error"]["message"] == "business_date must be in YYYY-MM-DD format"
 
 
 def test_news_alerts_endpoint_returns_payload(monkeypatch) -> None:
@@ -102,6 +142,46 @@ def test_wrap_call_maps_generic_exception_to_502(monkeypatch) -> None:
     assert payload["detail"]["error"]["type"] == "RuntimeError"
     assert payload["detail"]["error"]["method"] == "market_status"
     assert payload["detail"]["error"]["error_id"]
+    assert payload["detail"]["error"]["retriable"] is True
+
+
+def test_company_history_endpoint_marks_timeout_as_retriable(monkeypatch) -> None:
+    """Company history timeout failures should remain retriable in API responses."""
+
+    def _company_history(symbol: str, start_date: Any, end_date: Any):
+        del symbol, start_date, end_date
+        raise TimeoutError("upstream timed out")
+
+    monkeypatch.setattr(api_app_module.service, "company_history", _company_history)
+
+    response = client.get(
+        "/companies/NABIL/history",
+        params={"start_date": "2026-01-01", "end_date": "2026-01-31"},
+    )
+
+    assert response.status_code == 502
+    payload = response.json()
+    assert payload["detail"]["error"]["type"] == "TimeoutError"
+    assert payload["detail"]["error"]["retriable"] is True
+
+
+def test_company_history_endpoint_marks_malformed_payload_as_upstream_error(monkeypatch) -> None:
+    """Company history parsing failures should map to a stable upstream contract."""
+
+    def _company_history(symbol: str, start_date: Any, end_date: Any):
+        del symbol, start_date, end_date
+        raise AttributeError("object has no attribute 'empty'")
+
+    monkeypatch.setattr(api_app_module.service, "company_history", _company_history)
+
+    response = client.get(
+        "/companies/NABIL/history",
+        params={"start_date": "2026-01-01", "end_date": "2026-01-31"},
+    )
+
+    assert response.status_code == 502
+    payload = response.json()
+    assert payload["detail"]["error"]["type"] == "AttributeError"
     assert payload["detail"]["error"]["retriable"] is True
 
 

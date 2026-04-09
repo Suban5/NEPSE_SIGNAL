@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 
 import cli.commands as commands
+from workflows.errors import WorkflowUpstreamError
 
 
 # --- Helper: Build mock dataframes ---
@@ -319,6 +320,48 @@ def test_scan_symbol_requires_symbol_argument() -> None:
     
     with pytest.raises(ValueError, match="--symbol is required"):
         commands.scan_symbol(args)
+
+
+def test_scan_symbol_rejects_invalid_date_range(monkeypatch) -> None:
+    """scan_symbol should reject inverted dates before executing the workflow."""
+    monkeypatch.setattr(commands, "build_data_fetch_coordinator", lambda: MagicMock())
+
+    args = argparse.Namespace(symbol="NABIL", start_date="2026-01-10", end_date="2026-01-01")
+
+    with pytest.raises(ValueError, match="start-date must be <= end-date"):
+        commands.scan_symbol(args)
+
+
+def test_scan_symbol_rejects_invalid_date_format(monkeypatch) -> None:
+    """scan_symbol should reject malformed date strings before executing the workflow."""
+    monkeypatch.setattr(commands, "build_data_fetch_coordinator", lambda: MagicMock())
+
+    args = argparse.Namespace(symbol="NABIL", start_date="2026/01/10", end_date=None)
+
+    with pytest.raises(ValueError, match="start-date and end-date must be in YYYY-MM-DD format"):
+        commands.scan_symbol(args)
+
+
+def test_backtest_market_propagates_upstream_history_failure(monkeypatch) -> None:
+    """backtest_market should surface upstream history failures from the workflow."""
+    coordinator_mock = MagicMock()
+    coordinator_mock.get_market_snapshot.return_value = build_mock_snapshot()
+    coordinator_mock.get_universe_with_history.side_effect = RuntimeError("temporary upstream error")
+
+    monkeypatch.setattr(commands, "build_data_fetch_coordinator", lambda: coordinator_mock)
+
+    args = argparse.Namespace(
+        command="backtest-market",
+        top_n=20,
+        lookback_days=252,
+        rebalance="static",
+        output="output",
+        sector_relative=False,
+        force_refresh=False,
+    )
+
+    with pytest.raises(WorkflowUpstreamError, match="temporary upstream error"):
+        commands.backtest_market(args)
 
 
 def test_top_volume_rejects_invalid_limit(monkeypatch) -> None:

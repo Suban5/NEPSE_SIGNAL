@@ -21,6 +21,7 @@ from nepse_api.factory import build_data_fetch_coordinator
 from ranking.opportunity_ranker import rank_opportunities
 from ranking.stock_ranker import build_ranked_views
 from signals.signal_engine import build_trade_signal
+from workflows.context import validate_positive_int, validate_symbol
 from workflows.market_scan import MarketScanDependencies, run_market_scan_workflow
 from workflows.market_backtest import MarketBacktestDependencies, run_market_backtest_workflow
 
@@ -108,6 +109,42 @@ class NepseApiService:
         if isinstance(payload, str):
             return payload
         return str(payload)
+
+    @staticmethod
+    def _normalize_symbol(symbol: str) -> str:
+        """Validate and normalize a stock symbol."""
+        return validate_symbol(symbol)
+
+    @staticmethod
+    def _normalize_company_id(company_id: str) -> str:
+        """Validate and normalize a company identifier."""
+        normalized = str(company_id).strip()
+        if not normalized:
+            raise ValueError("company_id is required")
+        return normalized
+
+    @staticmethod
+    def _normalize_business_date(business_date: str) -> str:
+        """Validate and normalize an ISO business date string."""
+        normalized = str(business_date).strip()
+        if not normalized:
+            raise ValueError("business_date is required")
+        try:
+            date.fromisoformat(normalized)
+        except ValueError as exc:
+            raise ValueError("business_date must be in YYYY-MM-DD format") from exc
+        return normalized
+
+    @staticmethod
+    def _validate_date_range(start_date: Optional[date], end_date: Optional[date]) -> None:
+        """Validate that an optional date range is ordered."""
+        if start_date is not None and end_date is not None and start_date > end_date:
+            raise ValueError("start_date must be <= end_date")
+
+    @staticmethod
+    def _normalize_page(value: Any, field_name: str, minimum: int = 1) -> int:
+        """Validate and normalize pagination values."""
+        return validate_positive_int(value, field_name, minimum)
 
     def __init__(self) -> None:
         settings = get_settings()
@@ -485,8 +522,9 @@ class NepseApiService:
 
     def company_details(self, symbol: str) -> Dict[str, Any]:
         """Return company details for a symbol."""
+        normalized_symbol = self._normalize_symbol(symbol)
         return self._coerce_dict(
-            self._call_cached("company_details", "getCompanyDetails", symbol=symbol.upper().strip())
+            self._call_cached("company_details", "getCompanyDetails", symbol=normalized_symbol)
         )
 
     def company_history(
@@ -496,8 +534,10 @@ class NepseApiService:
         end_date: Optional[date],
     ) -> List[Dict[str, Any]]:
         """Return company price-volume history for date range."""
+        normalized_symbol = self._normalize_symbol(symbol)
+        self._validate_date_range(start_date, end_date)
         history_df = self._coordinator.get_historical(
-            symbol=symbol.upper().strip(),
+            symbol=normalized_symbol,
             start=start_date,
             end=end_date,
             force_refresh=False,
@@ -508,26 +548,32 @@ class NepseApiService:
 
     def daily_scrip_price_graph(self, symbol: str) -> Any:
         """Return daily scrip price graph payload."""
-        return self._call(self._client, "getDailyScripPriceGraph", symbol=symbol.upper().strip())
+        return self._call(self._client, "getDailyScripPriceGraph", symbol=self._normalize_symbol(symbol))
 
     def company_financial_details(self, company_id: str) -> Any:
         """Return company financial details payload."""
+        normalized_company_id = self._normalize_company_id(company_id)
         return self._coerce_rows(
-            self._call_cached("company_financial_details", "getCompanyFinancialDetails", company_id=company_id)
+            self._call_cached("company_financial_details", "getCompanyFinancialDetails", company_id=normalized_company_id)
         )
 
     def company_agm(self, company_id: str) -> Any:
         """Return company AGM payload."""
-        return self._coerce_rows(self._call_cached("company_agm", "getCompanyAGM", company_id=company_id))
+        normalized_company_id = self._normalize_company_id(company_id)
+        return self._coerce_rows(self._call_cached("company_agm", "getCompanyAGM", company_id=normalized_company_id))
 
     def company_dividend(self, company_id: str) -> Any:
         """Return company dividend payload."""
-        return self._coerce_rows(self._call_cached("company_dividend", "getCompanyDividend", company_id=company_id))
+        normalized_company_id = self._normalize_company_id(company_id)
+        return self._coerce_rows(
+            self._call_cached("company_dividend", "getCompanyDividend", company_id=normalized_company_id)
+        )
 
     def company_market_depth(self, company_id: str) -> Any:
         """Return company market depth payload."""
+        normalized_company_id = self._normalize_company_id(company_id)
         return self._coerce_rows(
-            self._call_cached("company_market_depth", "getCompanyMarketDepth", company_id=company_id)
+            self._call_cached("company_market_depth", "getCompanyMarketDepth", company_id=normalized_company_id)
         )
 
     def floor_sheet(self, show_progress: bool = False) -> Any:
@@ -536,40 +582,48 @@ class NepseApiService:
 
     def floor_sheet_of(self, symbol: str, business_date: str) -> Any:
         """Return floor sheet payload for one symbol/date."""
+        normalized_symbol = self._normalize_symbol(symbol)
+        normalized_business_date = self._normalize_business_date(business_date)
         return self._coerce_rows(self._call(
             self._client,
             "getFloorSheetOf",
-            symbol=symbol.upper().strip(),
-            business_date=business_date,
+            symbol=normalized_symbol,
+            business_date=normalized_business_date,
         ))
 
     def trading_average(self, business_date: str, n_days: int = 180) -> Any:
         """Return trading average payload."""
+        normalized_business_date = self._normalize_business_date(business_date)
+        normalized_n_days = validate_positive_int(n_days, "n_days")
         return self._coerce_rows(
-            self._call(self._client, "getTradingAverage", business_date=business_date, nDays=n_days)
+            self._call(self._client, "getTradingAverage", business_date=normalized_business_date, nDays=normalized_n_days)
         )
 
     def symbol_market_depth(self, symbol: str) -> Any:
         """Return symbol market depth payload."""
-        return self._coerce_text(self._call(self._client, "getSymbolMarketDepth", symbol=symbol.upper().strip()))
+        return self._coerce_text(self._call(self._client, "getSymbolMarketDepth", symbol=self._normalize_symbol(symbol)))
 
     def company_news_list(self, page: int = 1, page_size: int = 100, is_strip_tags: bool = True) -> Any:
         """Return company news list payload."""
+        normalized_page = self._normalize_page(page, "page")
+        normalized_page_size = self._normalize_page(page_size, "page_size")
         return self._call(
             self._client,
             "getCompanyNewsList",
-            page=page,
-            page_size=page_size,
+            page=normalized_page,
+            page_size=normalized_page_size,
             is_strip_tags=is_strip_tags,
         )
 
     def news_alert_list(self, page: int = 1, page_size: int = 100, is_strip_tags: bool = True) -> Any:
         """Return news and alert list payload."""
+        normalized_page = self._normalize_page(page, "page")
+        normalized_page_size = self._normalize_page(page_size, "page_size")
         return self._call(
             self._client,
             "getNewsAndAlertList",
-            page=page,
-            page_size=page_size,
+            page=normalized_page,
+            page_size=normalized_page_size,
             is_strip_tags=is_strip_tags,
         )
 
@@ -579,7 +633,8 @@ class NepseApiService:
 
     def nepse_notice(self, page: int = 0) -> Any:
         """Return NEPSE notice payload."""
-        return self._coerce_dict(self._call_cached("nepse_notice", "getNepseNotice", page=page))
+        normalized_page = self._normalize_page(page, "page", minimum=0)
+        return self._coerce_dict(self._call_cached("nepse_notice", "getNepseNotice", page=normalized_page))
 
     def holiday_list(self, year: int) -> Any:
         """Return holiday list payload for year."""

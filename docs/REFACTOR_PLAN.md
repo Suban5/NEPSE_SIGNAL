@@ -34,6 +34,7 @@ This document tracks technical refactoring status and architectural decisions.
 - [x] Added OpenAPI/schema tests for analytics and error contract models.
 - [x] Consolidated analytics response assembly in `api/service.py` through a shared helper.
 - [x] Added typed analytics backtest summary endpoint exposing workflow summary, historical validation, and portfolio metrics.
+- [x] Hardened API/service validation for symbol, date, and pagination inputs with client-error mapping.
 
 ### cli
 - [x] Kept CLI dispatch thin and aligned it with shared workflow dependencies.
@@ -41,6 +42,7 @@ This document tracks technical refactoring status and architectural decisions.
 - [x] Added CLI summary logging for scan, backtest, and symbol workflows.
 - [x] Added CLI regression tests for invalid parameter handling.
 - [x] Extended market backtest CLI logs with historical validation and portfolio metric payloads.
+- [x] Added CLI validation for symbol date ranges before workflow execution.
 
 ### analysis / ranking / backtesting
 - [x] Added scoring explainability with score breakdown models and response formatting.
@@ -58,6 +60,7 @@ This document tracks technical refactoring status and architectural decisions.
   - [x] Completed coverage expansion objective for service and workflow layers and validated baseline coverage across critical modules.
   - [x] Added CI coverage enforcement target in `.github/workflows/ci.yml` using `--cov-fail-under=90`.
   - [x] Added regression tests for API and service-layer backtest summary contract and workflow historical-validation metadata.
+  - [x] Added workflow failure-path regressions covering missing history, sparse buy sets, malformed history rows, retriable upstream failures, and artifact stability after workflow exceptions.
 
 ## In Progress
 

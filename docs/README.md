@@ -19,6 +19,11 @@ Validation Method: Code + Tests
 - [Workflow Reference](workflows.md) — orchestration and execution patterns
 - [Blue-Chip Scoring](bluechip-scoring.md) — ranking logic and explainability
 
+Recent updates:
+- API Contracts now includes symbol/date/pagination validation notes and the backtest summary response contract
+- Workflow Reference now documents historical backtest validation and portfolio metric summaries
+- Blue-Chip Scoring now documents the detector-owned score access and merge helpers used by workflows and ranking views
+
 **Operations:**
 - [API Server Guide](api-server.md) — deployment and HTTP usage
 - [Troubleshooting](troubleshooting.md) — common issues and solutions

@@ -48,11 +48,19 @@ Data freshness behavior for API-backed analytics routes:
 - GET /companies/{company_id}/dividend
 - GET /companies/{company_id}/market-depth
 
+Validation notes:
+- `/companies/{symbol}` and other symbol-based routes normalize to uppercase and reject non-alphanumeric symbols in the service layer.
+- `/companies/{symbol}/history` rejects inverted date ranges where `start_date > end_date`.
+
 ### Trading
 - GET /trading/floor-sheet
 - GET /trading/floor-sheet/{symbol}
 - GET /trading/average
 - GET /trading/market-depth/{symbol}
+
+Validation notes:
+- `/trading/average` requires `business_date` to use `YYYY-MM-DD` format and `n_days >= 1`.
+- `/news/company` and `/news/alerts` require `page >= 1` and `page_size >= 1`.
 
 ### News
 - GET /news/company
