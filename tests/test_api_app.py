@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from concurrent.futures import TimeoutError as FutureTimeoutError
+from typing import Any, cast
+
+import pytest
 from fastapi.testclient import TestClient
+from fastapi import HTTPException
 
 from api import app as api_app_module
-from workflows.errors import WorkflowValidationError
+from workflows.errors import WorkflowRankingError, WorkflowValidationError
 
 
 client = TestClient(api_app_module.app)
@@ -139,6 +144,53 @@ def test_wrap_call_exposes_workflow_classification(monkeypatch) -> None:
     assert payload["detail"]["error"]["stage"] == "validate"
     assert payload["detail"]["error"]["workflow"] == "market_status"
     assert payload["detail"]["error"]["retriable"] is False
+
+
+def test_wrap_call_exposes_ranking_workflow_classification(monkeypatch) -> None:
+    """Ranking workflow failures should preserve category and status metadata."""
+
+    def _raise_error():
+        raise WorkflowRankingError("market_status", "rank", "ranking failed")
+
+    monkeypatch.setattr(api_app_module.service, "market_status", _raise_error)
+
+    response = client.get("/market/status")
+
+    assert response.status_code == 500
+    payload = response.json()
+    assert payload["detail"]["error"]["category"] == "ranking"
+    assert payload["detail"]["error"]["stage"] == "rank"
+    assert payload["detail"]["error"]["workflow"] == "market_status"
+    assert payload["detail"]["error"]["retriable"] is False
+
+
+def test_wrap_call_with_timeout_maps_timeout_to_http_504(monkeypatch) -> None:
+    """Timeout wrapper should return a stable 504 contract when the worker future times out."""
+
+    class _TimeoutFuture:
+        def result(self, timeout: int):
+            del timeout
+            raise FutureTimeoutError()
+
+    class _TimeoutExecutor:
+        def submit(self, fn, *args, **kwargs):
+            del fn, args, kwargs
+            return _TimeoutFuture()
+
+        def shutdown(self, wait: bool, cancel_futures: bool) -> None:
+            del wait, cancel_futures
+
+    monkeypatch.setattr(api_app_module, "ThreadPoolExecutor", lambda max_workers: _TimeoutExecutor())
+
+    with pytest.raises(HTTPException) as exc_info:
+        api_app_module._wrap_call_with_timeout("floor_sheet", 3, lambda: [])
+
+    error = exc_info.value
+    assert error.status_code == 504
+    detail = cast(dict[str, Any], error.detail)
+    assert detail["error"]["code"] == "UPSTREAM_TIMEOUT"
+    assert detail["error"]["method"] == "floor_sheet"
+    assert detail["error"]["message"] == "Request timed out after 3 seconds"
 
 
 def test_openapi_exposes_contract_models() -> None:

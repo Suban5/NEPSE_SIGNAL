@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from pathlib import Path
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
 from nepse_client import NepseClient
@@ -181,6 +181,20 @@ class NepseApiService:
             "signal_summary": signal_summary[summary_columns].to_dict(orient="records"),
         }
 
+    @staticmethod
+    def _build_analytics_response(
+        payload: Dict[str, Any],
+        rows_key: str,
+    ) -> Dict[str, Any]:
+        """Build a uniform analytics response contract."""
+        return {
+            "top_n": payload["top_n"],
+            "sector_relative": payload["sector_relative"],
+            "execution_id": payload.get("execution_id", ""),
+            "summary": payload.get("summary"),
+            "rows": payload[rows_key],
+        }
+
     def _analytics_payload(self, top_n: int, sector_relative: bool) -> Dict[str, Any]:
         """Return cached analytics payload for query parameters."""
         normalized_top_n = max(1, min(int(top_n), 200))
@@ -203,36 +217,24 @@ class NepseApiService:
 
     def analytics_bluechip_ranking(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
         """Return workflow-backed blue-chip ranking output."""
-        payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
-        return {
-            "top_n": payload["top_n"],
-            "sector_relative": payload["sector_relative"],
-            "execution_id": payload.get("execution_id", ""),
-            "summary": payload.get("summary"),
-            "rows": payload["bluechip_ranking"],
-        }
+        return self._build_analytics_response(
+            self._analytics_payload(top_n=top_n, sector_relative=sector_relative),
+            "bluechip_ranking",
+        )
 
     def analytics_opportunities(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
         """Return workflow-backed ranked opportunities output."""
-        payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
-        return {
-            "top_n": payload["top_n"],
-            "sector_relative": payload["sector_relative"],
-            "execution_id": payload.get("execution_id", ""),
-            "summary": payload.get("summary"),
-            "rows": payload["opportunities"],
-        }
+        return self._build_analytics_response(
+            self._analytics_payload(top_n=top_n, sector_relative=sector_relative),
+            "opportunities",
+        )
 
     def analytics_signal_summary(self, top_n: int = 20, sector_relative: bool = False) -> Dict[str, Any]:
         """Return workflow-backed signal summary output."""
-        payload = self._analytics_payload(top_n=top_n, sector_relative=sector_relative)
-        return {
-            "top_n": payload["top_n"],
-            "sector_relative": payload["sector_relative"],
-            "execution_id": payload.get("execution_id", ""),
-            "summary": payload.get("summary"),
-            "rows": payload["signal_summary"],
-        }
+        return self._build_analytics_response(
+            self._analytics_payload(top_n=top_n, sector_relative=sector_relative),
+            "signal_summary",
+        )
 
     def build_bluechip_ranking_response(
         self, bluechip_ranked: pd.DataFrame, sector_relative: bool = False, top_n: int = 20
@@ -381,7 +383,7 @@ class NepseApiService:
         snapshot_df = self._coordinator.get_market_snapshot(force_refresh=False)
         if snapshot_df.empty:
             return []
-        return snapshot_df.to_dict(orient="records")
+        return cast(List[Dict[str, Any]], snapshot_df.to_dict(orient="records"))
 
     def price_volume(self) -> Any:
         """Return price-volume payload."""
@@ -440,7 +442,7 @@ class NepseApiService:
         )
         if history_df.empty:
             return []
-        return history_df.to_dict(orient="records")
+        return cast(List[Dict[str, Any]], history_df.to_dict(orient="records"))
 
     def daily_scrip_price_graph(self, symbol: str) -> Any:
         """Return daily scrip price graph payload."""

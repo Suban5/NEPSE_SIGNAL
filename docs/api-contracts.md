@@ -102,15 +102,60 @@ Notes:
 
 Error body model: ApiErrorResponse
 
-Fields:
-- code
-- type
-- method
-- message
-- error_id
-- upstream_status
-- retriable
+### Standard Fields
+- code: error classification code (UPSTREAM_ERROR, UPSTREAM_TIMEOUT)
+- type: exception class name (RuntimeError, TimeoutError, etc.)
+- method: API method name that failed (market_status, live_market, etc.)
+- message: exception message or descriptive error text
+- error_id: unique error identifier for correlation and logging
+- upstream_status: HTTP status code from upstream service when available (401, 503, etc.)
+- retriable: boolean indicating whether the error is safe to retry
+
+### Workflow-Classified Error Fields
+
+When a workflow orchestration layer raises a classified error (WorkflowValidationError, WorkflowRankingError, etc.), the error payload includes:
+- category: workflow failure classification (validation, ranking, data, upstream)
+- stage: workflow processing stage where the failure occurred (validate, fetch, rank, signal, backtest, persist)
+- workflow: workflow name (market_scan, market_backtest, symbol_analysis, etc.)
+
+Example (validation error):
+```json
+{
+  "error": {
+    "code": "UPSTREAM_ERROR",
+    "type": "WorkflowValidationError",
+    "method": "market_scan",
+    "message": "invalid parameter",
+    "error_id": "scan-abc123",
+    "category": "validation",
+    "stage": "validate",
+    "workflow": "market_scan",
+    "retriable": false
+  }
+}
+```
+
+### Timeout Contract
+
+When a long-running operation times out (e.g., floor_sheet endpoint with timeout_seconds parameter), the error response uses:
+- code: UPSTREAM_TIMEOUT
+- type: TimeoutError
+- status_code: 504 (GatewayTimeout)
+- message: includes the timeout duration
+
+Example:
+```json
+{
+  "error": {
+    "code": "UPSTREAM_TIMEOUT",
+    "type": "TimeoutError",
+    "method": "floor_sheet",
+    "message": "Request timed out after 30 seconds"
+  }
+}
+```
 
 ## Validation Reference
 
 - Route behavior and schema: tests/test_api_app.py
+- Service retry and error classification: tests/test_api_service.py

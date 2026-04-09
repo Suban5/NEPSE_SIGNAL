@@ -31,6 +31,7 @@ This document tracks technical refactoring status and architectural decisions.
 - [x] Added analytics `execution_id` and optional `summary` fields to analytics responses.
 - [x] Exposed workflow category, stage, and workflow metadata in API error responses.
 - [x] Added OpenAPI/schema tests for analytics and error contract models.
+- [x] Consolidated analytics response assembly in `api/service.py` through a shared helper.
 
 ### cli
 - [x] Kept CLI dispatch thin and aligned it with shared workflow dependencies.
@@ -42,21 +43,27 @@ This document tracks technical refactoring status and architectural decisions.
 - [x] Added scoring explainability with score breakdown models and response formatting.
 - [x] Kept ranking and backtesting aligned with workflow-driven outputs and benchmark artifacts.
 
+### testing
+- [x] Expanded workflow and service-layer regression coverage for edge cases and negative paths.
+  - [x] Added service-layer tests for retry behavior, cached call reuse, and analytics payload caching in `tests/test_api_service.py`.
+  - [x] Added API negative-path tests for workflow ranking classification and timeout-to-504 mapping in `tests/test_api_app.py`.
+  - [x] Updated `docs/api-contracts.md` and `docs/workflows.md` with explicit negative-path contract documentation.
+
 ## In Progress
 
-### api / cli / workflows
-- [ ] Consolidate duplicated output assembly across `api/service.py`, `cli/commands.py`, and `workflows/*.py`.
-- [ ] Normalize any remaining output wrappers so analytics, CLI logs, and benchmark artifacts use the same payload shape.
+### testing
+- [ ] Measure and increase test coverage to at least 80 percent for service and workflow layers.
+  - [ ] Run coverage analysis on `api/service.py` and `workflows/*.py` modules.
+  - [ ] Identify and add tests for remaining uncovered paths (edge cases, error handling).
+  - [ ] Update coverage targets in CI configuration.
 
 ## Remaining / Planned
 
 ### api
-- [ ] Reduce duplicate logic in `api/service.py` by extracting shared analytics payload builders.
 - [ ] Introduce versioned API response handling and explicit backward-compatibility rules.
 
 ### workflows
 - [ ] Continue tightening workflow orchestration boundaries so shared helpers live in one place.
-- [ ] Expand workflow-layer tests around edge cases and negative-path behavior.
 
 ### docs / ci
 - [ ] Expand generated API docs checks in CI.

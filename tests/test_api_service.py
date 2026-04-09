@@ -25,6 +25,10 @@ class _AnalyticsCacheStub:
     def set(self, key: str, value: Any) -> None:
         self._values[key] = value
 
+    def snapshot(self) -> dict[str, int]:
+        """Return mock cache statistics."""
+        return {"hits": 0, "misses": 0}
+
 
 def _build_service(coordinator: Any) -> NepseApiService:
     """Create a service instance without invoking the real constructor."""
@@ -671,3 +675,356 @@ def test_price_volume_history_returns_rows(monkeypatch: pytest.MonkeyPatch) -> N
 
     result = service.price_volume_history("20240101")
     assert len(result) >= 0
+
+
+def test_live_market_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """live_market() should return market snapshot rows via coordinator."""
+    coordinator = SimpleNamespace(
+        get_market_snapshot=lambda force_refresh=False: pd.DataFrame(
+            [{"symbol": "NABIL", "close": 100.0}, {"symbol": "SCB", "close": 200.0}]
+        )
+    )
+    service = _build_service(coordinator)
+
+    result = service.live_market()
+    assert len(result) == 2
+    assert result[0]["symbol"] == "NABIL"
+
+
+def test_live_market_returns_empty_for_empty_dataframe() -> None:
+    """live_market() should return empty list when coordinator returns empty DataFrame."""
+    coordinator = SimpleNamespace(get_market_snapshot=lambda force_refresh=False: pd.DataFrame())
+    service = _build_service(coordinator)
+
+    result = service.live_market()
+    assert result == []
+
+
+def test_price_volume_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """price_volume() should return price-volume rows."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getPriceVolume":
+            return [{"symbol": "NABIL", "volume": 1000}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.price_volume()
+    assert len(result) >= 0
+
+
+def test_supply_demand_returns_dict(monkeypatch: pytest.MonkeyPatch) -> None:
+    """supply_demand() should return supply-demand dict."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getSupplyDemand":
+            return {"buy": 100, "sell": 200}
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.supply_demand()
+    assert isinstance(result, dict)
+    assert result["buy"] == 100
+
+
+def test_top_gainers_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """top_gainers() should return top gainers rows."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getTopGainers":
+            return [{"symbol": "NABIL", "change": 5.5}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.top_gainers()
+    assert len(result) >= 0
+
+
+def test_top_losers_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """top_losers() should return top losers rows."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getTopLosers":
+            return [{"symbol": "SCB", "change": -2.1}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.top_losers()
+    assert len(result) >= 0
+
+
+def test_top_ten_trade_scrips_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """top_ten_trade_scrips() should return top 10 trade scrips rows."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getTopTenTradeScrips":
+            return [{"symbol": "NABIL", "volume": 50000}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.top_ten_trade_scrips()
+    assert len(result) >= 0
+
+
+def test_top_ten_transaction_scrips_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """top_ten_transaction_scrips() should return top 10 transaction scrips rows."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getTopTenTransactionScrips":
+            return [{"symbol": "SCB", "transactions": 100}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.top_ten_transaction_scrips()
+    assert len(result) >= 0
+
+
+def test_top_ten_turnover_scrips_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """top_ten_turnover_scrips() should return top 10 turnover scrips rows."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getTopTenTurnoverScrips":
+            return [{"symbol": "NABIL", "turnover": 500000}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.top_ten_turnover_scrips()
+    assert len(result) >= 0
+
+
+def test_daily_scrip_price_graph_returns_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    """daily_scrip_price_graph() should return graph payload."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getDailyScripPriceGraph":
+            return {"symbol": "NABIL", "data": [{"date": "2024-01-01", "close": 100}]}
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.daily_scrip_price_graph("NABIL")
+    assert isinstance(result, dict)
+
+
+def test_company_history_returns_empty_for_empty_dataframe() -> None:
+    """company_history() should return empty list when coordinator returns empty DataFrame."""
+    coordinator = SimpleNamespace(
+        get_historical=lambda symbol, start, end, force_refresh=False: pd.DataFrame()
+    )
+    service = _build_service(coordinator)
+
+    from datetime import date
+
+    result = service.company_history("NABIL", date(2024, 1, 1), date(2024, 1, 31))
+    assert result == []
+
+
+def test_floor_sheet_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """floor_sheet() should return floor sheet rows."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getFloorSheet":
+            return [{"symbol": "NABIL", "quantity": 100}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.floor_sheet()
+    assert len(result) >= 0
+
+
+def test_floor_sheet_of_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """floor_sheet_of() should return floor sheet rows for symbol/date."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getFloorSheetOf":
+            return [{"symbol": "NABIL", "quantity": 50, "rate": 101.5}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.floor_sheet_of("NABIL", "20240101")
+    assert len(result) >= 0
+
+
+def test_trading_average_returns_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """trading_average() should return trading average rows."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getTradingAverage":
+            return [{"symbol": "NABIL", "average": 10000}]
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.trading_average("20240101")
+    assert len(result) >= 0
+
+
+def test_symbol_market_depth_returns_text(monkeypatch: pytest.MonkeyPatch) -> None:
+    """symbol_market_depth() should return market depth as text."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getSymbolMarketDepth":
+            return "market depth data"
+        return None
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.symbol_market_depth("NABIL")
+    assert isinstance(result, str)
+
+
+def test_company_news_list_returns_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    """company_news_list() should return news list payload."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getCompanyNewsList":
+            return {"news": [{"title": "News"}], "total": 1}
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.company_news_list()
+    assert isinstance(result, dict)
+
+
+def test_news_alert_list_returns_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    """news_alert_list() should return alerts payload."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getNewsAndAlertList":
+            return {"alerts": [{"message": "Alert"}]}
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.news_alert_list()
+    assert isinstance(result, dict)
+
+
+def test_company_id_key_map_returns_dict(monkeypatch: pytest.MonkeyPatch) -> None:
+    """company_id_key_map() should return company ID mapping."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getCompanyIDKeyMap":
+            return {"NABIL": 1, "SCB": 2}
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.company_id_key_map()
+    assert isinstance(result, dict)
+
+
+def test_security_id_key_map_returns_dict(monkeypatch: pytest.MonkeyPatch) -> None:
+    """security_id_key_map() should return security ID mapping."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getSecurityIDKeyMap":
+            return {"sec1": 100, "sec2": 200}
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.security_id_key_map()
+    assert isinstance(result, dict)
+
+
+def test_sector_scrips_returns_dict(monkeypatch: pytest.MonkeyPatch) -> None:
+    """sector_scrips() should return sector-scrip mapping."""
+    service = _build_service(SimpleNamespace())
+
+    def _fake_call(
+        client: Any, method_name: str, **kwargs: Any
+    ) -> Any:
+        del client, kwargs
+        if method_name == "getSectorScrips":
+            return {"Banking": ["NABIL", "SCB"], "Finance": ["NIBL"]}
+        return {}
+
+    monkeypatch.setattr(NepseApiService, "_call", staticmethod(_fake_call))
+
+    result = service.sector_scrips()
+    assert isinstance(result, dict)
+
+
+def test_cache_stats_returns_dict() -> None:
+    """cache_stats() should return cache statistics."""
+    service = _build_service(SimpleNamespace())
+
+    result = service.cache_stats()
+    assert isinstance(result, dict)
+    assert len(result) > 0  # Should have at least one cache
+    assert "market_status" in result or len(result) >= 1

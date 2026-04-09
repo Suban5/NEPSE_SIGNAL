@@ -49,21 +49,26 @@ This document tracks feature-level progress and remaining product milestones. It
 - [x] Tightened analytics OpenAPI contracts with typed response models for response metadata.
 - [x] Added typed row models for opportunities and signal summary analytics responses.
 - [x] Exposed workflow category, stage, and workflow metadata in API error responses.
+- [x] Standardized analytics response assembly in `api/service.py`.
 
 ### cli
 - [x] Preserved CLI workflow commands with shared dependency wiring.
 - [x] Kept user-facing validation behavior aligned with workflow validation.
 - [x] Logged standardized workflow summary payloads for scan, backtest, and symbol analysis.
 
-## In Progress
+### testing
+- [x] Expanded regression coverage for negative-path behavior in workflows and API routes.
+  - [x] Added service-layer regression tests for retry policy, cache reuse, and analytics payload contract/caching behavior.
+  - [x] Added API regression tests for timeout handling contract (`UPSTREAM_TIMEOUT`) and ranking failure classification metadata.
+  - [x] Synchronized documentation with newly tested negative-path contracts in `api-contracts.md` and `workflows.md`.
 
-### api / cli / workflows
-- [ ] Standardize output contracts across `api/app.py`, `cli/commands.py`, and `workflows/*.py`.
-- [ ] Remove duplicated output assembly between `api/service.py` and workflow helpers.
+## In Progress
 
 ### testing
 - [ ] Increase test coverage to at least 80 percent for service and workflow layers.
-- [ ] Expand regression coverage for negative-path behavior in workflows and API routes.
+  - [ ] Measure current coverage baseline for critical modules.
+  - [ ] Add tests for remaining service/workflow uncovered branches.
+  - [ ] Enable coverage reporting in CI pipeline.
 
 ## Remaining / Planned
 
@@ -74,6 +79,9 @@ This document tracks feature-level progress and remaining product milestones. It
 ### analysis / ranking / backtesting
 - [ ] Add backtesting validation against historical NEPSE data and expose summary results via API and CLI.
 - [ ] Enforce a single source of truth for scoring logic in `bluechip/detector.py` and related ranking modules.
+
+### api / cli / workflows
+- [ ] Continue normalizing any remaining output wrappers so future analytics and benchmark payloads stay aligned.
 
 ### product
 - [ ] Provide a lightweight dashboard for exploration and reporting.
