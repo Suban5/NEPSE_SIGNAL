@@ -22,7 +22,7 @@ This document is a planning template for future implementation work. It is inten
 |---|---|---|---|---|
 | Reliability | 2 | 0 | 0 | 2 |
 | Usability | 2 | 0 | 0 | 2 |
-| Scalability | 2 | 1 | 0 | 1 |
+| Scalability | 2 | 0 | 0 | 2 |
 | Technical Debt | 2 | 0 | 0 | 2 |
 | Observability | 2 | 0 | 0 | 2 |
 | Versioning and Contracts | 2 | 0 | 0 | 2 |
@@ -236,7 +236,7 @@ Milestones:
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
 | S1 | Reduce duplication between `api/service.py`, `cli/commands.py`, and `workflows/*.py` | Common flow logic is reused instead of copied | Code review and tests confirm shared behavior from one path | Done |
-| S2 | Introduce versioned API response patterns | Backward compatibility rules are defined and visible | Contract tests cover versioned response behavior | Not Started |
+| S2 | Introduce versioned API response patterns | Backward compatibility rules are defined and visible | Contract tests cover versioned response behavior | Done |
 
 S1 Task List:
 
@@ -261,9 +261,19 @@ S2 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| S2-T1 | Define versioning rules for API responses | `api/app.py`, `api/models.py`, `docs/api-contracts.md` | Versioning rules written and reviewable | Not Started |
-| S2-T2 | Decide compatibility policy for future response changes | `docs/api-contracts.md`, `docs/README.md` | Backward compatibility expectations are documented | Not Started |
-| S2-T3 | Add tests for versioned response behavior or headers | `tests/test_api_app.py` | Tests confirm stable version behavior | Not Started |
+| S2-T1 | Define versioning rules for API responses | `api/app.py`, `api/models.py`, `docs/api-contracts.md` | Versioning rules written and reviewable | Done |
+| S2-T2 | Decide compatibility policy for future response changes | `docs/api-contracts.md`, `docs/README.md` | Backward compatibility expectations are documented | Done |
+| S2-T3 | Add tests for versioned response behavior or headers | `tests/test_api_app.py` | Tests confirm stable version behavior | Done |
+
+**S2-T1/T2/T3 Completion Summary (2026-04-09):**
+- Extended additive `v2` contract metadata beyond analytics routes to non-analytics typed endpoints (`/health`, `/metrics`)
+- Added optional typed `contract` field support in `HealthResponse` and `RequestMetricsResponse`
+- Preserved `v1` response shapes without additive contract field changes
+- Added test coverage for:
+  - `v2` metadata inclusion on `/health` and `/metrics`
+  - unknown-version fallback to `v1` shape for `/metrics`
+  - `v1` shape preservation for `/health`
+- Updated docs (`api-contracts.md`, `docs/README.md`) with expanded versioning policy and endpoint coverage
 
 Assumptions:
 
@@ -583,7 +593,7 @@ Milestones:
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
 | UI1 | Define a minimal dashboard scope | UI covers top signals, rankings, and backtest summaries only | Scope review confirms no backend business logic is duplicated | Done |
-| UI2 | Reuse API endpoints for visualization and reporting | UI consumes existing API outputs without custom data duplication | Manual smoke check confirms UI reads from stable API responses | Not Started |
+| UI2 | Reuse API endpoints for visualization and reporting | UI consumes existing API outputs without custom data duplication | Manual smoke check confirms UI reads from stable API responses | Done |
 
 UI1 Task List:
 

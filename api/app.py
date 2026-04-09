@@ -200,6 +200,22 @@ def _apply_versioned_analytics_contract(payload: Any, request: Request) -> Any:
         request_header=request.headers.get("X-API-Version"),
     )
 
+
+def _apply_versioned_contract(payload: Any, request: Request) -> Any:
+    """Apply additive version metadata for non-analytics dict responses."""
+    if not isinstance(payload, dict):
+        return payload
+    negotiated_version = _resolve_negotiated_version(request)
+    if negotiated_version != "v2":
+        return payload
+    versioned_payload = dict(payload)
+    versioned_payload["contract"] = {
+        "version": negotiated_version,
+        "compatibility_policy": "additive, backward-compatible",
+        "request_header": request.headers.get("X-API-Version"),
+    }
+    return versioned_payload
+
 def _record_execution_metric(endpoint: str, payload: Any) -> None:
     """Record workflow execution-id telemetry for metrics snapshots."""
     if not isinstance(payload, dict):
@@ -256,10 +272,16 @@ def _wrap_call_with_timeout(
         executor.shutdown(wait=False, cancel_futures=True)
 
 
-@app.get("/health", response_model=HealthResponse, responses=ERROR_RESPONSES)
-def health() -> Any:
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    response_model_exclude_none=True,
+    responses=ERROR_RESPONSES,
+)
+def health(request: Request) -> Any:
     """Return API health status."""
-    return _wrap_call("health", service.health)
+    payload = _wrap_call("health", service.health)
+    return _apply_versioned_contract(payload, request)
 
 
 @app.get("/market/status", response_model=MarketStatusResponse, responses=ERROR_RESPONSES)
@@ -540,12 +562,17 @@ def analytics_backtest_summary(
     return _apply_versioned_analytics_contract(payload, request)
 
 
-@app.get("/metrics", response_model=RequestMetricsResponse, responses=ERROR_RESPONSES)
-def metrics() -> Any:
+@app.get(
+    "/metrics",
+    response_model=RequestMetricsResponse,
+    response_model_exclude_none=True,
+    responses=ERROR_RESPONSES,
+)
+def metrics(request: Request) -> Any:
     """Return API request metrics snapshot."""
     snapshot = metrics_registry.snapshot()
     snapshot["cache_stats"] = service.cache_stats()
-    return snapshot
+    return _apply_versioned_contract(snapshot, request)
 
 
 @app.get("/contracts", response_model=ApiContractResponse, responses=ERROR_RESPONSES)

@@ -68,7 +68,9 @@ This document tracks technical refactoring status and architectural decisions.
 - [x] Consolidated workflow summary CLI logging across 3 commands (scan, backtest, symbol) into shared `_log_workflow_summary()` helper in `cli/commands.py`.
 - [x] Validated consolidation with full test suite (396 tests passing, 2026-04-09) ensuring no behavioral regression.
 
-  - [ ] No active testing tasks currently.
+### scalability / versioning expansion (S2)
+- [x] Extended additive `v2` contract metadata beyond analytics endpoints to typed non-analytics routes (`/health`, `/metrics`).
+- [x] Added API regression coverage for `v2` metadata inclusion and unknown-version fallback behavior.
 
 ## Remaining / Planned
 

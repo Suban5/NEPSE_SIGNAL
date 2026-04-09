@@ -95,6 +95,16 @@ This document tracks feature-level progress and remaining product milestones. It
   - [x] Validated refactor with full test suite (396 tests passing, 2026-04-09).
   - [x] Frozen UI1 contract (endpoints and field shapes) in `docs/api-contracts.md` for stable dashboard consumption.
 
+### scalability / versioning expansion (S2)
+- [x] Expanded additive `v2` versioned response coverage beyond analytics routes.
+  - [x] Added additive `contract` metadata support for non-analytics typed endpoints: `/health`, `/metrics`.
+  - [x] Preserved `v1` response shapes with no additional required fields.
+  - [x] Added regression tests for:
+    - `v2` metadata inclusion on `/health` and `/metrics`
+    - unknown-version fallback to `v1` shape
+    - `v1` shape preservation with no additive contract field
+  - [x] Updated docs (`api-contracts.md`, `docs/README.md`) with explicit expanded versioning policy.
+
 ### ui / dashboard (UI1 & UI2)
 - [x] **UI1 Complete (2026-04-09):** Defined minimal dashboard scope with 4 panels (signals, rankings, backtest summary, observability).
   - [x] UI1-T1: Defined dashboard screens and data needs with 3 primary + 1 optional panel.
@@ -123,7 +133,6 @@ This document tracks feature-level progress and remaining product milestones. It
 ## Remaining / Planned
 
 ### api
-- [ ] Expand versioned API response coverage beyond analytics routes while preserving additive compatibility.
 - [ ] Expand generated API docs checks in CI.
 
 ### analysis / ranking / backtesting
@@ -133,7 +142,6 @@ This document tracks feature-level progress and remaining product milestones. It
 - [ ] Maintain the standardized output contracts as new analytics routes and workflow summaries are introduced.
 
 ### product
-- [ ] Provide a lightweight dashboard for exploration and reporting.
 - [ ] Support richer visualization and historical comparison views.
 - [ ] Improve release and versioning discipline for long-term maintainability.
 

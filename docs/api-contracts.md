@@ -18,6 +18,7 @@ Versioning strategy:
 - Unknown/unsupported versions safely fall back to `v1`
 - v1 preserves existing response shapes
 - v2 introduces additive metadata only (backward-compatible)
+- Non-analytics typed endpoints (`/health`, `/metrics`) also include additive `contract` metadata for `v2` requests
 
 Data freshness behavior for API-backed analytics routes:
 
@@ -29,6 +30,13 @@ Data freshness behavior for API-backed analytics routes:
 
 ### Health
 - GET /health -> HealthResponse
+
+Version-aware health metadata:
+
+- For `v2` requests, `/health` includes additive `contract` with:
+  - `version`
+  - `compatibility_policy`
+  - `request_header`
 
 ### Market
 - GET /market/status
@@ -146,6 +154,13 @@ U2 explainability contract:
 
 ### Observability
 - GET /metrics -> RequestMetricsResponse
+
+Version-aware observability metadata:
+
+- For `v2` requests, `/metrics` includes additive `contract` with:
+  - `version`
+  - `compatibility_policy`
+  - `request_header`
 
 O1 structured logging schema (workflow and analytics service events):
 
@@ -305,12 +320,11 @@ Example:
 - No force-refresh query parameter is exposed in UI1 contract
 - Backtest summary uses provided `lookback_days` and `rebalance` params; does not auto-adjust
 
-**Future Versioning (Post-UI1):**
+**Versioning Expansion Status (S2 Complete):**
 
-Once UI1 ships and users are actively consuming these endpoints:
-- S2 milestone will introduce explicit versioning rules (e.g., v2 response metadata, breaking change migration path)
-- Breaking changes will require a coordinated client upgrade or fallback response version
-- Version negotiation via `X-API-Version` header (currently supported, awaiting v2 consumer adoption)
+- S2 now extends additive `v2` contract metadata beyond analytics routes to non-analytics typed endpoints (`/health`, `/metrics`)
+- Breaking changes still require a coordinated client upgrade or fallback response version
+- Version negotiation remains header-driven via `X-API-Version`
 
 ## Validation Reference
 

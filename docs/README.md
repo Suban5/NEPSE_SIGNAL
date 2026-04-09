@@ -30,6 +30,7 @@ Recent updates:
 - O1 observability now documents structured stage logs with stage, category, and symbol-scope metadata
 - O2 observability now documents execution-ID traceability in analytics logs and `/metrics` snapshots
 - B1 backtesting now includes deterministic fixture validation and sparse-history edge-case coverage in engine tests
+- S2 versioning now extends additive `v2` contract metadata to non-analytics typed endpoints (`/health`, `/metrics`) with test-backed fallback behavior
 
 **Operations:**
 - [API Server Guide](api-server.md) — deployment and HTTP usage

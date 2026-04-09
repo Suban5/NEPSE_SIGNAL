@@ -301,6 +301,7 @@ def test_contract_docs_reference_runtime_endpoints_and_models() -> None:
 
     required_endpoints = [
         "/health",
+        "/metrics",
         "/market/status",
         "/analytics/bluechip-ranking",
         "/analytics/opportunities",
@@ -323,6 +324,7 @@ def test_contract_docs_reference_runtime_endpoints_and_models() -> None:
 
     assert "X-API-Version" in contracts_doc
     assert "X-API-Version" in api_server_doc
+    assert "`/health`, `/metrics`" in contracts_doc
 
 
 def test_metrics_endpoint_returns_snapshot() -> None:
@@ -396,6 +398,54 @@ def test_contracts_endpoint_falls_back_to_v1_for_unknown_header() -> None:
     assert payload["default_version"] == "v1"
     assert payload["negotiated_version"] == "v1"
     assert response.headers["x-api-contract-version"] == "v1"
+
+
+def test_health_endpoint_includes_contract_metadata_for_v2(monkeypatch) -> None:
+    """Health endpoint should include additive contract metadata when v2 is negotiated."""
+    monkeypatch.setattr(api_app_module.service, "health", lambda: {"ok": True, "marketStatus": {"isOpen": True}})
+
+    response = client.get("/health", headers={"X-API-Version": "v2"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["contract"]["version"] == "v2"
+    assert payload["contract"]["compatibility_policy"] == "additive, backward-compatible"
+    assert payload["contract"]["request_header"] == "v2"
+
+
+def test_health_endpoint_omits_contract_metadata_for_v1(monkeypatch) -> None:
+    """Health endpoint should preserve v1 shape without additive contract field."""
+    monkeypatch.setattr(api_app_module.service, "health", lambda: {"ok": True, "marketStatus": {"isOpen": True}})
+
+    response = client.get("/health", headers={"X-API-Version": "v1"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert "contract" not in payload
+
+
+def test_metrics_endpoint_includes_contract_metadata_for_v2() -> None:
+    """Metrics endpoint should include additive contract metadata when v2 is negotiated."""
+    response = client.get("/metrics", headers={"X-API-Version": "v2"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "request_count" in payload
+    assert payload["contract"]["version"] == "v2"
+    assert payload["contract"]["compatibility_policy"] == "additive, backward-compatible"
+    assert payload["contract"]["request_header"] == "v2"
+
+
+def test_metrics_endpoint_unknown_version_falls_back_to_v1_shape() -> None:
+    """Metrics endpoint should fall back to v1 response shape for unknown version headers."""
+    response = client.get("/metrics", headers={"X-API-Version": "v9"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "request_count" in payload
+    assert "contract" not in payload
 
 
 def test_analytics_bluechip_ranking_endpoint_returns_rows(monkeypatch) -> None:

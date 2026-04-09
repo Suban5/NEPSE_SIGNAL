@@ -53,6 +53,7 @@ class HealthResponse(BaseModel):
 
     ok: bool
     marketStatus: Dict[str, Any]
+    contract: Optional[ResponseContractMetadata] = None
 
 
 class MarketStatusResponse(BaseModel):
@@ -113,6 +114,7 @@ class RequestMetricsResponse(BaseModel):
     execution_trace_counts: Dict[str, int]
     last_execution_id_by_endpoint: Dict[str, str]
     cache_stats: Dict[str, Dict[str, int]]
+    contract: Optional[ResponseContractMetadata] = None
 
 
 class WorkflowSummary(BaseModel):
