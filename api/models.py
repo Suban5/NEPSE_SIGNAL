@@ -16,6 +16,9 @@ class ApiErrorInfo(BaseModel):
     method: str
     message: str
     error_id: str
+    category: Optional[str] = None
+    stage: Optional[str] = None
+    workflow: Optional[str] = None
     upstream_status: Optional[int] = None
     retriable: bool = False
 

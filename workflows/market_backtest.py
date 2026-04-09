@@ -25,6 +25,7 @@ from .common import (
     new_execution_id,
     rank_signal_frame,
 )
+from .errors import WorkflowDataError, WorkflowRankingError, classify_workflow_exception
 from .context import MarketBacktestContext
 
 
@@ -87,43 +88,58 @@ def run_market_backtest_workflow(
         execution_id=execution_id,
         workflow_name="market_backtest",
     )
-    symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
+    try:
+        symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
+    except Exception as exc:
+        raise classify_workflow_exception("market_backtest", "scan", exc) from exc
     fetch_elapsed = time.perf_counter() - fetch_started
     if not symbols:
-        raise RuntimeError("No symbols passed market universe filters.")
+        raise WorkflowDataError("market_backtest", "scan", "No symbols passed market universe filters.")
 
     score_started = time.perf_counter()
-    fundamentals_map = build_fundamentals_map(dependencies.coordinator, symbols)
-    features = dependencies.detector.build_feature_table(snapshot, filtered_history, fundamentals=fundamentals_map)
-    bluechip_ranked = dependencies.detector.score_bluechips(features)
+    try:
+        fundamentals_map = build_fundamentals_map(dependencies.coordinator, symbols)
+        features = dependencies.detector.build_feature_table(snapshot, filtered_history, fundamentals=fundamentals_map)
+        bluechip_ranked = dependencies.detector.score_bluechips(features)
+    except Exception as exc:
+        raise classify_workflow_exception("market_backtest", "score", exc) from exc
     score_elapsed = time.perf_counter() - score_started
     if bluechip_ranked.empty:
-        raise RuntimeError("No stocks qualified for blue-chip scoring.")
+        raise WorkflowRankingError("market_backtest", "score", "No stocks qualified for blue-chip scoring.")
 
     selected_symbols: List[str] = bluechip_ranked.head(top_n)["symbol"].tolist()
     signal_started = time.perf_counter()
-    signal_rows = compute_symbol_signal_rows(
-        symbols=selected_symbols,
-        filtered_history=filtered_history,
-        bluechip_ranked=bluechip_ranked,
-        add_indicators_fn=dependencies.add_indicators_fn,
-        detect_patterns_fn=dependencies.detect_patterns_fn,
-        build_trade_signal_fn=dependencies.build_trade_signal_fn,
-    )
+    try:
+        signal_rows = compute_symbol_signal_rows(
+            symbols=selected_symbols,
+            filtered_history=filtered_history,
+            bluechip_ranked=bluechip_ranked,
+            add_indicators_fn=dependencies.add_indicators_fn,
+            detect_patterns_fn=dependencies.detect_patterns_fn,
+            build_trade_signal_fn=dependencies.build_trade_signal_fn,
+        )
+    except Exception as exc:
+        raise classify_workflow_exception("market_backtest", "signal", exc) from exc
     signal_elapsed = time.perf_counter() - signal_started
 
     rank_started = time.perf_counter()
-    signal_df = dependencies.rank_opportunities_fn(pd.DataFrame(signal_rows))
+    try:
+        signal_df = dependencies.rank_opportunities_fn(pd.DataFrame(signal_rows))
+    except Exception as exc:
+        raise classify_workflow_exception("market_backtest", "rank", exc) from exc
     buy_symbols = signal_df.loc[signal_df["signal"] == "BUY", "symbol"].tolist() if not signal_df.empty else []
     rank_elapsed = time.perf_counter() - rank_started
 
     backtest_started = time.perf_counter()
-    portfolio_result: PortfolioBacktestResult = run_portfolio_backtest(
-        historical_universe=filtered_history,
-        selected_symbols=buy_symbols,
-        lookback_days=lookback_days,
-        rebalance=rebalance,
-    )
+    try:
+        portfolio_result: PortfolioBacktestResult = run_portfolio_backtest(
+            historical_universe=filtered_history,
+            selected_symbols=buy_symbols,
+            lookback_days=lookback_days,
+            rebalance=rebalance,
+        )
+    except Exception as exc:
+        raise classify_workflow_exception("market_backtest", "backtest", exc) from exc
     backtest_elapsed = time.perf_counter() - backtest_started
 
     metrics = {
@@ -171,8 +187,11 @@ def run_market_backtest_workflow(
         buy_symbols=int(len(buy_symbols)),
     )
 
-    (output_dir / "portfolio_backtest.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-    signal_df.to_csv(output_dir / "portfolio_signal_set.csv", index=False)
+    try:
+        (output_dir / "portfolio_backtest.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+        signal_df.to_csv(output_dir / "portfolio_signal_set.csv", index=False)
+    except Exception as exc:
+        raise classify_workflow_exception("market_backtest", "persist", exc) from exc
 
     return MarketBacktestContext(
         output_dir=output_dir,

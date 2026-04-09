@@ -24,6 +24,7 @@ from ranking.stock_ranker import build_ranked_views
 from signals.signal_engine import build_trade_signal
 from visualization.charts import save_mplfinance_chart, save_plotly_chart
 
+from .errors import classify_workflow_exception
 from .context import validate_historical_universe, validate_snapshot
 
 
@@ -112,7 +113,14 @@ def build_fundamentals_map(fetcher: Any, symbols: List[str]) -> Dict[str, Dict[s
                 logger.warning("Fundamentals endpoint unavailable; skipping remaining fundamentals requests")
                 fundamentals_enabled = False
         except Exception as exc:
-            logger.debug("Fundamentals unavailable for %s: %s", symbol, exc)
+            failure = classify_workflow_exception("market_scan", "fundamentals", exc)
+            logger.debug(
+                "Fundamentals unavailable for %s: %s (%s/%s)",
+                symbol,
+                exc,
+                failure.category,
+                failure.stage,
+            )
             fundamentals_map[symbol] = {
                 "earnings_growth": 0.0,
                 "dividend_stability": 0.0,
@@ -171,7 +179,14 @@ def compute_symbol_signal_rows(
             try:
                 row = future_by_symbol[symbol].result()
             except Exception as exc:
-                logger.warning("Signal generation failed for %s: %s", symbol, exc)
+                failure = classify_workflow_exception("signal", "ranking", exc)
+                logger.warning(
+                    "Signal generation failed for %s: %s (%s/%s)",
+                    symbol,
+                    exc,
+                    failure.category,
+                    failure.stage,
+                )
                 continue
             if row is not None:
                 rows_by_symbol[symbol] = row
@@ -222,9 +237,24 @@ def fetch_market_snapshot(
         event="fetch_market_snapshot_started",
         force_refresh=bool(force_refresh),
     )
-    snapshot = coordinator.get_market_snapshot(force_refresh=force_refresh)
+    try:
+        snapshot = coordinator.get_market_snapshot(force_refresh=force_refresh)
+        validate_snapshot(snapshot)
+    except Exception as exc:
+        failure = classify_workflow_exception(workflow_name, "fetch", exc)
+        log_workflow_event(
+            workflow=workflow_name,
+            execution_id=execution_id,
+            event="workflow_failed",
+            level=logging.ERROR,
+            stage=failure.stage,
+            category=failure.category,
+            error_type=exc.__class__.__name__,
+            retriable=failure.retriable,
+            message=str(exc),
+        )
+        raise failure from exc
 
-    validate_snapshot(snapshot)
     log_workflow_event(
         workflow=workflow_name,
         execution_id=execution_id,
@@ -278,11 +308,27 @@ def fetch_historical_universe(
         lookback_years=int(lookback_years),
         force_refresh=bool(force_refresh),
     )
-    historical_universe = coordinator.get_universe_with_history(
-        lookback_years=lookback_years,
-        force_refresh=force_refresh,
-    )
-    validate_historical_universe(historical_universe)
+    try:
+        historical_universe = coordinator.get_universe_with_history(
+            lookback_years=lookback_years,
+            force_refresh=force_refresh,
+        )
+        validate_historical_universe(historical_universe)
+    except Exception as exc:
+        failure = classify_workflow_exception(workflow_name, "fetch", exc)
+        log_workflow_event(
+            workflow=workflow_name,
+            execution_id=execution_id,
+            event="workflow_failed",
+            level=logging.ERROR,
+            stage=failure.stage,
+            category=failure.category,
+            error_type=exc.__class__.__name__,
+            retriable=failure.retriable,
+            message=str(exc),
+        )
+        raise failure from exc
+
     log_workflow_event(
         workflow=workflow_name,
         execution_id=execution_id,

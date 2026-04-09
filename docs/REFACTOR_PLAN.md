@@ -36,7 +36,13 @@ This document tracks major architectural decisions and their implementation stat
 
 ## Active Work
 
-- Failure classification for fetch, scan, and ranking workflow errors
+- None
+
+## Completed (2026-04-09)
+
+- Added workflow failure classification for fetch, scan, score, rank, signal, and backtest stages
+- Exposed workflow category, stage, and workflow metadata in API error responses
+- Added workflow and API regression tests for classified validation, data, and ranking failures
 
 ## Active Follow-ups
 

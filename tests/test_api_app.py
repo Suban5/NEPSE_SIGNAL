@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from api import app as api_app_module
+from workflows.errors import WorkflowValidationError
 
 
 client = TestClient(api_app_module.app)
@@ -119,6 +120,24 @@ def test_wrap_call_preserves_upstream_status_code(monkeypatch) -> None:
     assert payload["detail"]["error"]["type"] == "UpstreamAuthError"
     assert payload["detail"]["error"]["message"] == "token expired"
     assert payload["detail"]["error"]["upstream_status"] == 401
+    assert payload["detail"]["error"]["retriable"] is False
+
+
+def test_wrap_call_exposes_workflow_classification(monkeypatch) -> None:
+    """Workflow failures should surface category and stage metadata in the API payload."""
+
+    def _raise_error():
+        raise WorkflowValidationError("market_status", "validate", "invalid workflow input")
+
+    monkeypatch.setattr(api_app_module.service, "market_status", _raise_error)
+
+    response = client.get("/market/status")
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["detail"]["error"]["category"] == "validation"
+    assert payload["detail"]["error"]["stage"] == "validate"
+    assert payload["detail"]["error"]["workflow"] == "market_status"
     assert payload["detail"]["error"]["retriable"] is False
 
 

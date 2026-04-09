@@ -24,6 +24,7 @@ from ranking.stock_ranker import build_ranked_views
 from signals.signal_engine import build_trade_signal
 from visualization.charts import save_mplfinance_chart, save_plotly_chart
 from workflows.common import build_historical_signal_frame as workflow_build_historical_signal_frame
+from workflows.errors import WorkflowValidationError
 from workflows.market_backtest import MarketBacktestDependencies, run_market_backtest_workflow
 from workflows.market_scan import MarketScanDependencies, run_market_scan_workflow
 from workflows.symbol_analysis import SymbolAnalysisDependencies, run_symbol_analysis_workflow
@@ -289,18 +290,21 @@ def scan_symbol(args: argparse.Namespace) -> None:
     Args:
         args: CLI arguments.
     """
-    context = run_symbol_analysis_workflow(
-        SymbolAnalysisDependencies(
-            coordinator=build_data_fetch_coordinator(),
-            detector=_build_bluechip_detector(bool(getattr(args, "sector_relative", False))),
-            detect_patterns_fn=detect_patterns,
-            build_trade_signal_fn=build_trade_signal,
-            add_indicators_fn=add_indicators,
-        ),
-        symbol=getattr(args, "symbol", None),
-        start_date=getattr(args, "start_date", None),
-        end_date=getattr(args, "end_date", None),
-    )
+    try:
+        context = run_symbol_analysis_workflow(
+            SymbolAnalysisDependencies(
+                coordinator=build_data_fetch_coordinator(),
+                detector=_build_bluechip_detector(bool(getattr(args, "sector_relative", False))),
+                detect_patterns_fn=detect_patterns,
+                build_trade_signal_fn=build_trade_signal,
+                add_indicators_fn=add_indicators,
+            ),
+            symbol=getattr(args, "symbol", None),
+            start_date=getattr(args, "start_date", None),
+            end_date=getattr(args, "end_date", None),
+        )
+    except WorkflowValidationError as exc:
+        raise ValueError(str(exc)) from exc
 
     logger.info("Symbol: %s", context.symbol)
     logger.info("Blue-Chip Score: %.4f", context.bluechip_score)

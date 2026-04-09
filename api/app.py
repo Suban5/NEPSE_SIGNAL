@@ -34,6 +34,7 @@ from api.models import (
 )
 from api.service import NepseApiService
 from api.telemetry import metrics_registry
+from workflows.errors import WorkflowError
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 
 app = FastAPI(title="NepseSignal API", version="1.0.0")
 service = NepseApiService()
-ERROR_RESPONSES = {401: {"model": ApiErrorResponse}, 502: {"model": ApiErrorResponse}}
+ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {401: {"model": ApiErrorResponse}, 502: {"model": ApiErrorResponse}}
 SUPPORTED_API_VERSIONS = ["v1", "v2"]
 
 
@@ -56,7 +57,6 @@ async def add_request_context(request: Request, call_next: Any) -> Response:
     token = request_id_var.set(request_id)
     started_at = time.perf_counter()
     status_code = 500
-    response: Response | None = None
     try:
         response = await call_next(request)
         status_code = response.status_code
@@ -88,6 +88,9 @@ async def add_request_context(request: Request, call_next: Any) -> Response:
 
 def _extract_status_code(exc: Exception) -> int:
     """Extract HTTP status code from upstream exception when available."""
+    if isinstance(exc, WorkflowError):
+        return int(exc.status_code)
+
     if isinstance(exc, HTTPException):
         return int(exc.status_code)
 
@@ -115,11 +118,14 @@ def _is_retriable(exc: Exception, status_code: int) -> bool:
     return exc.__class__.__name__ in {"TimeoutError", "ReadTimeout", "ConnectTimeout", "NepseNetworkError"}
 
 
-def _build_error_detail(method: str, exc: Exception) -> dict[str, dict[str, str]]:
+def _build_error_detail(method: str, exc: Exception) -> dict[str, dict[str, Any]]:
     """Build stable API error contract payload."""
     status_code = _extract_status_code(exc)
     upstream_status = _extract_upstream_status(exc)
     error_id = getattr(exc, "error_id", None) or str(uuid4())
+    category = getattr(exc, "category", None)
+    stage = getattr(exc, "stage", None)
+    workflow = getattr(exc, "workflow", None)
     return {
         "error": {
             "code": "UPSTREAM_ERROR",
@@ -127,8 +133,11 @@ def _build_error_detail(method: str, exc: Exception) -> dict[str, dict[str, str]
             "method": method,
             "message": str(exc),
             "error_id": error_id,
+            "category": category,
+            "stage": stage,
+            "workflow": workflow,
             "upstream_status": upstream_status,
-            "retriable": _is_retriable(exc, status_code),
+            "retriable": bool(getattr(exc, "retriable", _is_retriable(exc, status_code))),
         }
     }
 

@@ -73,6 +73,8 @@ Remaining stabilization tasks:
 - Add failure classification for fetch, scan, and ranking workflows
 - Strengthen input validation across all entry points
 
+Status update (2026-04-09): failure classification for workflow fetch/scan/ranking paths is now implemented and covered by tests; remaining stabilization work focuses on coverage, contract standardization, and input validation.
+
 ### Mid-Term
 
 Platform consistency, technical debt reduction, and contract stability:

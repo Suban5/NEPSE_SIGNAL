@@ -13,6 +13,7 @@ import pandas as pd
 from bluechip.detector import BlueChipDetector
 from market.market_scanner import MarketScanner
 from workflows.common import build_fundamentals_map, fetch_market_snapshot
+from workflows.errors import WorkflowDataError, WorkflowRankingError, WorkflowValidationError
 from workflows.market_backtest import MarketBacktestDependencies, run_market_backtest_workflow
 from workflows.market_scan import MarketScanDependencies, run_market_scan_workflow
 from workflows.symbol_analysis import SymbolAnalysisDependencies, run_symbol_analysis_workflow
@@ -117,6 +118,79 @@ def test_market_scan_workflow_writes_outputs(tmp_path: Path) -> None:
     assert "total_seconds" in benchmark_payload
 
 
+def test_market_scan_workflow_classifies_empty_scan(tmp_path: Path) -> None:
+    """Market scan should classify an empty universe as a data failure."""
+    dependencies = MarketScanDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame,
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda df: df,
+        build_ranked_views_fn=lambda bc, sig: {
+            "top_bluechips": bc,
+            "best_buy_signals": sig,
+            "strong_momentum": sig,
+            "high_risk_weak": sig,
+        },
+    )
+    dependencies.scanner.scan = lambda snapshot, historical_universe: ([], {})
+
+    try:
+        run_market_scan_workflow(dependencies, tmp_path, top_n=2, plot=False)
+    except WorkflowDataError as exc:
+        assert exc.category == "data"
+        assert exc.stage == "scan"
+        assert "No symbols passed market universe filters." in str(exc)
+    else:
+        raise AssertionError("Expected WorkflowDataError")
+
+
+def test_market_scan_workflow_classifies_ranking_failure(tmp_path: Path) -> None:
+    """Market scan should classify ranking failures separately from upstream fetch errors."""
+    dependencies = MarketScanDependencies(
+        coordinator=_coordinator(),
+        scanner=MarketScanner(),
+        detector=BlueChipDetector(),
+        add_indicators_fn=lambda frame: frame.assign(
+            sma20=frame["close"],
+            sma50=frame["close"],
+            sma200=frame["close"],
+            ema20=frame["close"],
+            rsi14=50.0,
+            macd=0.1,
+            macd_signal=0.05,
+            bb_upper=frame["close"] + 2,
+            bb_lower=frame["close"] - 2,
+            volume_sma20=frame["volume"],
+            volume_trend=1.0,
+        ),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            signal="BUY", confidence=0.9, indicators={}, patterns={}
+        ),
+        rank_opportunities_fn=lambda _df: (_ for _ in ()).throw(RuntimeError("ranking exploded")),
+        build_ranked_views_fn=lambda bc, sig: {
+            "top_bluechips": bc,
+            "best_buy_signals": sig,
+            "strong_momentum": sig,
+            "high_risk_weak": sig,
+        },
+    )
+
+    try:
+        run_market_scan_workflow(dependencies, tmp_path, top_n=2, plot=False)
+    except WorkflowRankingError as exc:
+        assert exc.category == "ranking"
+        assert exc.stage == "rank"
+        assert "ranking exploded" in str(exc)
+    else:
+        raise AssertionError("Expected WorkflowRankingError")
+
+
 def test_market_backtest_workflow_writes_outputs(tmp_path: Path) -> None:
     """Market backtest workflow should produce portfolio outputs and selected symbols."""
     dependencies = MarketBacktestDependencies(
@@ -215,6 +289,27 @@ def test_build_fundamentals_map_stops_after_first_failure() -> None:
     assert fetcher.calls == 1
     assert set(result.keys()) == {"AAA", "BBB", "CCC"}
     assert all(values["earnings_growth"] == 0.0 for values in result.values())
+
+
+def test_symbol_analysis_invalid_symbol_is_classified() -> None:
+    """Single-symbol analysis should classify invalid symbols as validation errors."""
+    dependencies = SymbolAnalysisDependencies(
+        coordinator=_coordinator(),
+        detector=BlueChipDetector(),
+        detect_patterns_fn=lambda _df: [],
+        build_trade_signal_fn=lambda symbol, technical_df, pattern_results, bluechip_score: SimpleNamespace(
+            symbol=symbol, signal="BUY", confidence=0.9, indicators={}, timestamp=pd.Timestamp("2025-01-01")
+        ),
+        add_indicators_fn=lambda frame: frame,
+    )
+
+    try:
+        run_symbol_analysis_workflow(dependencies, symbol="", start_date=None, end_date=None)
+    except WorkflowValidationError as exc:
+        assert exc.category == "validation"
+        assert exc.stage == "validate"
+    else:
+        raise AssertionError("Expected WorkflowValidationError")
 
 
 def test_fetch_market_snapshot_logs_source_breakdown(caplog) -> None:

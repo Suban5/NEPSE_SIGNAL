@@ -21,6 +21,7 @@ from .common import (
     log_workflow_event,
     new_execution_id,
 )
+from .errors import WorkflowDataError, classify_workflow_exception
 from .context import SymbolAnalysisContext, validate_symbol
 
 
@@ -51,39 +52,55 @@ def run_symbol_analysis_workflow(
         start_date=str(start_date or ""),
         end_date=str(end_date or ""),
     )
-    normalized_symbol = validate_symbol(symbol)
+    try:
+        normalized_symbol = validate_symbol(symbol)
+    except Exception as exc:
+        raise classify_workflow_exception("symbol_analysis", "validate", exc) from exc
+
     parsed_start = pd.to_datetime(start_date).date() if start_date is not None else None
     parsed_end = pd.to_datetime(end_date).date() if end_date is not None else None
-    history = dependencies.coordinator.get_historical(
-        symbol=normalized_symbol,
-        start=parsed_start,
-        end=parsed_end,
-        force_refresh=False,
-    )
+    try:
+        history = dependencies.coordinator.get_historical(
+            symbol=normalized_symbol,
+            start=parsed_start,
+            end=parsed_end,
+            force_refresh=False,
+        )
+    except Exception as exc:
+        raise classify_workflow_exception("symbol_analysis", "fetch", exc) from exc
     if history.empty:
-        raise RuntimeError(f"No historical OHLCV found for {normalized_symbol}")
+        raise WorkflowDataError("symbol_analysis", "fetch", f"No historical OHLCV found for {normalized_symbol}")
 
     snapshot = fetch_market_snapshot(
         dependencies.coordinator,
         execution_id=execution_id,
         workflow_name="symbol_analysis",
     )
-    fundamentals_map = build_fundamentals_map(dependencies.coordinator, [normalized_symbol])
-    feature_df = dependencies.detector.build_feature_table(
-        snapshot,
-        {normalized_symbol: history},
-        fundamentals=fundamentals_map,
-    )
-    scored = dependencies.detector.score_bluechips(feature_df)
+    try:
+        fundamentals_map = build_fundamentals_map(dependencies.coordinator, [normalized_symbol])
+        feature_df = dependencies.detector.build_feature_table(
+            snapshot,
+            {normalized_symbol: history},
+            fundamentals=fundamentals_map,
+        )
+        scored = dependencies.detector.score_bluechips(feature_df)
+    except Exception as exc:
+        raise classify_workflow_exception("symbol_analysis", "score", exc) from exc
     bluechip_score = float(scored["bluechip_score"].iloc[0]) if not scored.empty else 0.0
 
-    technical_df = dependencies.add_indicators_fn(history)
-    pattern_map = detect_market_patterns(technical_df)
-    pattern_results = dependencies.detect_patterns_fn(technical_df)
-    signal = dependencies.build_trade_signal_fn(normalized_symbol, technical_df, pattern_results, bluechip_score)
+    try:
+        technical_df = dependencies.add_indicators_fn(history)
+        pattern_map = detect_market_patterns(technical_df)
+        pattern_results = dependencies.detect_patterns_fn(technical_df)
+        signal = dependencies.build_trade_signal_fn(normalized_symbol, technical_df, pattern_results, bluechip_score)
+    except Exception as exc:
+        raise classify_workflow_exception("symbol_analysis", "signal", exc) from exc
 
-    signal_df = build_historical_signal_frame(normalized_symbol, technical_df, bluechip_score, dependencies.detect_patterns_fn, dependencies.build_trade_signal_fn)
-    backtest: BacktestResult = run_backtest(signal_df, signal_column="signal")
+    try:
+        signal_df = build_historical_signal_frame(normalized_symbol, technical_df, bluechip_score, dependencies.detect_patterns_fn, dependencies.build_trade_signal_fn)
+        backtest: BacktestResult = run_backtest(signal_df, signal_column="signal")
+    except Exception as exc:
+        raise classify_workflow_exception("symbol_analysis", "backtest", exc) from exc
     log_workflow_event(
         workflow="symbol_analysis",
         execution_id=execution_id,

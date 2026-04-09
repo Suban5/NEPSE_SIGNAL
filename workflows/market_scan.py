@@ -25,6 +25,7 @@ from .common import (
     write_benchmark_snapshot,
     render_charts,
 )
+from .errors import WorkflowDataError, WorkflowRankingError, classify_workflow_exception
 from .context import MarketScanContext
 
 
@@ -87,45 +88,60 @@ def run_market_scan_workflow(
         execution_id=execution_id,
         workflow_name="market_scan",
     )
-    symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
+    try:
+        symbols, filtered_history = dependencies.scanner.scan(snapshot=snapshot, historical_universe=historical_universe)
+    except Exception as exc:
+        raise classify_workflow_exception("market_scan", "scan", exc) from exc
     fetch_elapsed = time.perf_counter() - fetch_started
     if not symbols:
-        raise RuntimeError("No symbols passed market universe filters.")
+        raise WorkflowDataError("market_scan", "scan", "No symbols passed market universe filters.")
 
     score_started = time.perf_counter()
-    fundamentals_map = build_fundamentals_map(dependencies.coordinator, symbols)
-    features = dependencies.detector.build_feature_table(snapshot, filtered_history, fundamentals=fundamentals_map)
-    bluechip_ranked = dependencies.detector.score_bluechips(features)
+    try:
+        fundamentals_map = build_fundamentals_map(dependencies.coordinator, symbols)
+        features = dependencies.detector.build_feature_table(snapshot, filtered_history, fundamentals=fundamentals_map)
+        bluechip_ranked = dependencies.detector.score_bluechips(features)
+    except Exception as exc:
+        raise classify_workflow_exception("market_scan", "score", exc) from exc
     score_elapsed = time.perf_counter() - score_started
     if bluechip_ranked.empty:
-        raise RuntimeError("No stocks qualified for blue-chip scoring.")
+        raise WorkflowRankingError("market_scan", "score", "No stocks qualified for blue-chip scoring.")
 
     selected_symbols: List[str] = bluechip_ranked.head(top_n)["symbol"].tolist()
     signal_started = time.perf_counter()
-    signal_rows = compute_symbol_signal_rows(
-        symbols=selected_symbols,
-        filtered_history=filtered_history,
-        bluechip_ranked=bluechip_ranked,
-        add_indicators_fn=dependencies.add_indicators_fn,
-        detect_patterns_fn=dependencies.detect_patterns_fn,
-        build_trade_signal_fn=dependencies.build_trade_signal_fn,
-        plot=plot,
-        chart_dir=str(output_dir / "charts") if plot else None,
-        save_chart_fn=save_chart_fn,
-    )
+    try:
+        signal_rows = compute_symbol_signal_rows(
+            symbols=selected_symbols,
+            filtered_history=filtered_history,
+            bluechip_ranked=bluechip_ranked,
+            add_indicators_fn=dependencies.add_indicators_fn,
+            detect_patterns_fn=dependencies.detect_patterns_fn,
+            build_trade_signal_fn=dependencies.build_trade_signal_fn,
+            plot=plot,
+            chart_dir=str(output_dir / "charts") if plot else None,
+            save_chart_fn=save_chart_fn,
+        )
+    except Exception as exc:
+        raise classify_workflow_exception("market_scan", "signal", exc) from exc
     signal_elapsed = time.perf_counter() - signal_started
 
     rank_started = time.perf_counter()
-    signal_df = dependencies.rank_opportunities_fn(pd.DataFrame(signal_rows))
-    views = build_ranked_views_cached(
-        bluechip_ranked=bluechip_ranked,
-        signal_df=signal_df,
-        build_ranked_views_fn=dependencies.build_ranked_views_fn,
-    )
+    try:
+        signal_df = dependencies.rank_opportunities_fn(pd.DataFrame(signal_rows))
+        views = build_ranked_views_cached(
+            bluechip_ranked=bluechip_ranked,
+            signal_df=signal_df,
+            build_ranked_views_fn=dependencies.build_ranked_views_fn,
+        )
+    except Exception as exc:
+        raise classify_workflow_exception("market_scan", "rank", exc) from exc
     rank_elapsed = time.perf_counter() - rank_started
 
     save_started = time.perf_counter()
-    save_outputs(output_dir, bluechip_ranked, signal_df, views)
+    try:
+        save_outputs(output_dir, bluechip_ranked, signal_df, views)
+    except Exception as exc:
+        raise classify_workflow_exception("market_scan", "persist", exc) from exc
     save_elapsed = time.perf_counter() - save_started
     log_ranked_summary(views, execution_id=execution_id, workflow_name="market_scan")
 
