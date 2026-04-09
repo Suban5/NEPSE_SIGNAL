@@ -63,14 +63,13 @@ This document tracks feature-level progress and remaining product milestones. It
   - [x] Synchronized documentation with newly tested negative-path contracts in `api-contracts.md` and `workflows.md`.
   - [x] Added dedicated high-coverage suites for normalizers, signal adapter, cache adapter, candlestick adapter, persistence, and provider layers.
   - [x] Increased overall project test coverage baseline to roughly 93 percent.
+  - [x] Completed service/workflow coverage objective with measured baseline validation for critical modules.
+  - [x] Enabled CI coverage enforcement via `.github/workflows/ci.yml` with a 90 percent minimum gate.
 
 ## In Progress
 
 ### testing
-  - [x] Increase test coverage to at least 80 percent for service and workflow layers.
-  - [x] Measure current coverage baseline for critical modules.
-  - [x] Add tests for high-impact remaining uncovered branches in core adapters and data layers.
-  - [ ] Enable coverage reporting in CI pipeline.
+  - [ ] No active testing tasks currently.
 
 ## Remaining / Planned
 

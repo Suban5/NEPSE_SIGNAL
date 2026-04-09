@@ -51,14 +51,13 @@ This document tracks technical refactoring status and architectural decisions.
   - [x] Added dedicated module suites for `nepse_api/normalizers.py`, `signals/signal_engine.py`, `api/cache.py`, and `candlestick/patterns.py`.
   - [x] Added comprehensive persistence/provider suites for `nepse_api/data_persistence.py` and `nepse_api/providers.py`.
   - [x] Raised overall project test coverage baseline to roughly 93 percent with targeted branch coverage improvements.
+  - [x] Completed coverage expansion objective for service and workflow layers and validated baseline coverage across critical modules.
+  - [x] Added CI coverage enforcement target in `.github/workflows/ci.yml` using `--cov-fail-under=90`.
 
 ## In Progress
 
 ### testing
-  - [x] Measure and increase test coverage to at least 80 percent for service and workflow layers.
-  - [x] Run coverage analysis on `api/service.py` and `workflows/*.py` modules.
-  - [x] Identify and add tests for high-impact uncovered paths (edge cases, error handling).
-  - [ ] Update coverage targets in CI configuration.
+  - [ ] No active testing tasks currently.
 
 ## Remaining / Planned
 
