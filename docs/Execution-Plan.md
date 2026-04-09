@@ -604,9 +604,17 @@ UI2 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| UI2-T1 | Map each UI view to an existing API response | `api/app.py`, `api/models.py` | Each UI panel has a source endpoint | Not Started |
-| UI2-T2 | Reuse the current charting and reporting outputs | `visualization/charts.py`, `api/service.py` | UI reads existing outputs instead of recomputing them | Not Started |
-| UI2-T3 | Add smoke validation for read-only dashboard flows | `tests/test_api_app.py` | Smoke checks confirm the UI can consume stable API data | Not Started |
+| UI2-T1 | Map each UI view to an existing API response | `api/app.py`, `api/models.py` | Each UI panel has a source endpoint | Done |
+| UI2-T2 | Reuse the current charting and reporting outputs | `visualization/charts.py`, `api/service.py` | UI reads existing outputs instead of recomputing them | Done |
+| UI2-T3 | Add smoke validation for read-only dashboard flows | `tests/test_api_app.py` | Smoke checks confirm the UI can consume stable API data | Done |
+
+**UI2-T1/T2/T3 Completion Summary (2026-04-09):**
+- UI2_Endpoint_View_Mapping.md: Documented all 5 endpoints with panel-to-view mapping (signals, rankings, backtest, observability, health)
+- Field mapping defined for each panel (API field → UI display with format rules)
+- Charting reuse evaluated: Existing OHLC charting functions documented; native UI charting recommended for analytics
+- 6 curl-based smoke tests provided for all endpoints + error handling validation
+- Data freshness strategy: HTTP cache with manual refresh available
+- Ready for frontend implementation with complete endpoint/field specification
 
 Assumptions:
 
