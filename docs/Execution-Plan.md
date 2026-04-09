@@ -27,7 +27,7 @@ This document is a planning template for future implementation work. It is inten
 | Observability | 2 | 0 | 0 | 2 |
 | Versioning and Contracts | 2 | 0 | 0 | 2 |
 | Backtesting | 2 | 0 | 0 | 2 |
-| UI / Dashboard | 2 | 2 | 0 | 0 |
+| UI / Dashboard | 2 | 0 | 0 | 2 |
 
 ## Execution Order (Recommended)
 
@@ -582,16 +582,23 @@ Milestones:
 
 | ID | Milestone | Success Criteria | Validation | Status |
 |---|---|---|---|---|
-| UI1 | Define a minimal dashboard scope | UI covers top signals, rankings, and backtest summaries only | Scope review confirms no backend business logic is duplicated | Not Started |
+| UI1 | Define a minimal dashboard scope | UI covers top signals, rankings, and backtest summaries only | Scope review confirms no backend business logic is duplicated | Done |
 | UI2 | Reuse API endpoints for visualization and reporting | UI consumes existing API outputs without custom data duplication | Manual smoke check confirms UI reads from stable API responses | Not Started |
 
 UI1 Task List:
 
 | Task ID | Task | Related Modules | Validation | Status |
 |---|---|---|---|---|
-| UI1-T1 | Define dashboard screens and data needs | `api/app.py`, `visualization/charts.py`, `docs/Roadmap.md` | Screen list is small and tied to existing outputs | Not Started |
-| UI1-T2 | Confirm the dashboard scope avoids backend duplication | `api/service.py`, `workflows/*.py` | Scope review shows no copied business logic | Not Started |
-| UI1-T3 | Identify the minimum API surface needed by the UI | `api/app.py`, `api/models.py` | Required endpoints are documented and stable | Not Started |
+| UI1-T1 | Define dashboard screens and data needs | `api/app.py`, `visualization/charts.py`, `docs/Roadmap.md` | Screen list is small and tied to existing outputs | Done |
+| UI1-T2 | Confirm the dashboard scope avoids backend duplication | `api/service.py`, `workflows/*.py` | Scope review shows no copied business logic | Done |
+| UI1-T3 | Identify the minimum API surface needed by the UI | `api/app.py`, `api/models.py` | Required endpoints are documented and stable | Done |
+
+**UI1-T1/T2/T3 Completion Summary (2026-04-09):**
+- UI1_Dashboard_Scope.md: Defined 4 dashboard panels (signals, rankings, backtest summary, observability)
+- Business Logic Audit: Confirmed zero duplication across bluechip/detector.py, ranking/*, signals/*, backtesting/* modules
+- API Endpoint Mapping: Documented 5 required endpoints with minimum field sets and query params in UI1_API_Contract_Mapping.md
+- All panels tied to frozen contract endpoints; no custom backend logic needed
+- Ready for UI implementation with stable, read-only API contract
 
 UI2 Task List:
 
